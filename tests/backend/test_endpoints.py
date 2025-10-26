@@ -3,11 +3,11 @@ import json
 import sys
 from pathlib import Path
 
-# Ensure project root is on sys.path so `src` can be imported
-project_root = Path(__file__).resolve().parents[1]
+# Ensure project root is on sys.path so `backend` can be imported
+project_root = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(project_root))
 
-from src.server.main import app
+from backend.app.main import app
 
 c = TestClient(app)
 print(json.dumps(c.get('/measurements/').json(), indent=2))

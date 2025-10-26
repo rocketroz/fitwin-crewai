@@ -1,128 +1,236 @@
-# FitTwin (local stub)
+# FitTwin Monorepo
 
-Author: Laura Tornga (@rocketroz)
+**Author:** Laura Tornga (@rocketroz)
 
-Two-photo measurement mapping for upper and lower body with safe, offline tests. The API returns a normalized body measurement schema and simple recommendations for tops and bottoms. The code runs locally and does not call external vendors by default.
+A comprehensive monorepo for the FitTwin project, including backend API, CrewAI agents, frontend components, and data management. The backend provides two-photo measurement mapping for upper and lower body with normalized body measurement schema and size recommendations.
 
-## Quick start
+## Project Structure
 
-```bash
-# 1) clone or open the repo, then:
-cd ~/fitwin-crewai
-python3 -m venv .venv
-source .venv/bin/activate
-pip install -r requirements.txt  # if you have one; otherwise install fastapi uvicorn pytest
-# pip install fastapi uvicorn pytest
-
-# 2) run tests (offline via FastAPI TestClient)
-python -m pytest -q
-
-# 3) start the API
-uvicorn src.server.main:app --reload
-# FitTwin (local stub)
-
-Two-photo measurement mapping for upper and lower body with safe, offline tests. The API returns a normalized body measurement schema and simple recommendations for tops and bottoms. The code runs locally and does not call external vendors by default.
-
-## Quick start
-
-```bash
-# 1) clone or open the repo, then:
-cd ~/fitwin-crewai
-python3 -m venv .venv
-source .venv/bin/activate
-pip install -r requirements.txt  # if present; otherwise:
-# pip install fastapi uvicorn pytest
-
-# 2) run tests (offline via FastAPI TestClient)
-python -m pytest -q
-
-# 3) start the API
-uvicorn src.server.main:app --reload
-# open http://127.0.0.1:8000/docs
+```
+fitwin-crewai/
+├── agents/              # CrewAI multi-agent system
+│   ├── crew/           # Agent implementations
+│   ├── config/         # Agent configurations
+│   ├── prompts/        # Agent prompts
+│   └── tools/          # Agent tools
+├── backend/            # FastAPI backend application
+│   └── app/
+│       ├── routers/    # API endpoints
+│       ├── schemas/    # Pydantic models
+│       ├── services/   # Business logic
+│       └── core/       # Configuration and utilities
+├── data/               # Data and database files
+│   └── supabase/
+│       ├── migrations/ # Database migrations
+│       └── sql/        # SQL scripts
+├── docs/               # Documentation
+│   ├── runbooks/       # Operational guides
+│   └── PAUSE_RESUME_GUIDE.md
+├── frontend/           # Frontend application
+│   └── src/
+├── scripts/            # Utility scripts
+├── tests/              # Test suites
+│   ├── backend/        # Backend tests
+│   └── agents/         # Agent tests
+└── README.md
 ```
 
-Example requests
+## Quick Start
+
+### 1. Setup
+
+```bash
+# Clone the repository
+git clone https://github.com/rocketroz/fitwin-crewai.git
+cd fitwin-crewai
+
+# Create and activate virtual environment
+python3 -m venv .venv
+source .venv/bin/activate
+
+# Install dependencies
+pip install -r backend/requirements.txt
+```
+
+### Dev environment (recommended)
+
+For repeatable local testing and development (tests were validated with these pins), create and use a dev requirements file. This avoids accidental upgrades of transitive packages that can break the TestClient/Test dependencies.
+
+```bash
+# Create and activate venv (if you haven't already)
+python3 -m venv .venv
+source .venv/bin/activate
+
+# Install pinned dev/test dependencies
+pip install -r requirements-dev.txt
+
+# Run tests
+bash scripts/test_all.sh
+```
+
+Note: `requirements-dev.txt` pins `httpx==0.23.3`, `pydantic==1.10.24`, and other dev/test packages used to verify CI locally. If you use other tools that require newer versions (for example `crewai`, `chromadb`, or `mcp`), create a separate venv for those workflows to avoid conflicts.
+
+### 2. Configuration
+
+```bash
+# Copy environment templates
+cp backend/.env.example backend/.env
+cp agents/.env.example agents/.env
+
+# Edit the .env files with your configuration
+```
+
+### 3. Run the Backend
+
+```bash
+# Using the convenience script
+bash scripts/dev_server.sh
+
+# Or manually
+export PYTHONPATH="${PYTHONPATH}:$(pwd)"
+uvicorn backend.app.main:app --reload --host 0.0.0.0 --port 8000
+```
+
+The API will be available at `http://127.0.0.1:8000/docs` (Swagger UI).
+
+### 4. Run Tests
+
+```bash
+# Run all tests
+bash scripts/test_all.sh
+
+# Or run specific test suites
+pytest tests/backend/ -v
+```
+
+### 5. Run Agents
+
+```bash
+# Run CrewAI agents
+bash scripts/run_agents.sh
+```
+
+## API Endpoints
+
+### Measurements Endpoint
 
 ```bash
 curl -s http://127.0.0.1:8000/measurements/ | python -m json.tool
+```
+
+Returns normalized body measurements from the vendor API.
+
+### DMaaS (Digital Measurement as a Service) Endpoint
+
+```bash
 curl -s http://127.0.0.1:8000/dmaas/latest | python -m json.tool
 ```
 
-Sample response: /measurements/
+Returns measurements plus size recommendations for tops and bottoms.
 
-{ ... }
+## Environment Variables
 
-Sample response: /dmaas/latest
+### Backend (`backend/.env`)
 
-{ ... }
+- `ENV` - Application environment (dev, test, prod). Default: `dev`
+- `VENDOR_MODE` - Vendor integration mode (`stub` or `real`). Default: `stub`
 
-Environment
+### Agents (`agents/.env`)
 
-The app reads simple settings from the environment.
+- `OPENAI_API_KEY` - OpenAI API key for CrewAI agents
+- `AGENT_MODEL` - LLM model to use (e.g., `gpt-4`)
+- `AGENT_TEMPERATURE` - Temperature setting for agent responses
 
-- ENV default dev
-- VENDOR_MODE stub or real (default stub)
-- PORT default 8000
+## Development Guide
 
-Use .env.test for tests and .env.dev for local runs. Example file is in .env.example.
+### Vendor Integration
 
-# stub mode (default)
-VENDOR_MODE=stub uvicorn src.server.main:app --reload
+Implement real vendor integration in `backend/app/services/vendor_client.py`:
 
-# real mode placeholder
-VENDOR_MODE=real uvicorn src.server.main:app --reload
-
-Project layout
-
-```
-src/
-  server/
-    api/
-      dmaas.py
-      measurement_job.py
-    fit_rules_bottoms.py
-    fit_rules_tops.py
-    measure_schema.py
-    models.py
-    normalize.py
-    settings.py
-    vendor_client.py
-tests/
-  test_measure_and_recs.py
-.vscode/
-  launch.json
+```python
+def fetch_real_vendor(session_id: str) -> dict:
+    # Replace with actual vendor API call
+    response = requests.post(VENDOR_API_URL, json={"session_id": session_id})
+    return response.json()
 ```
 
-Where to extend
+Then set `VENDOR_MODE=real` in your environment.
 
-- Vendor integration: implement fetch_real_vendor in `vendor_client.py` and keep VENDOR_MODE switch.
-- Normalization: add mappers in `normalize.py` if a vendor introduces new fields.
-- Fit rules: replace placeholder logic in `fit_rules_tops.py` and `fit_rules_bottoms.py` with size charts and ease variants, plus unit tests.
+### Normalization
 
-Roll back
+Add custom mappers in `backend/app/core/utils.py` if vendors introduce new measurement fields.
 
-This repo is tagged at baseline/v1.0.
+### Fit Rules
 
+Enhance size recommendation logic in:
+- `backend/app/services/fit_rules_tops.py` - Top garment sizing
+- `backend/app/services/fit_rules_bottoms.py` - Bottom garment sizing
+
+Replace placeholder logic with actual size charts, ease calculations, and comprehensive unit tests.
+
+### Agent Development
+
+Add new agents in `agents/crew/` and configure them in `agents/config/`.
+
+## Testing
+
+The project uses pytest for testing. Test files are organized by component:
+
+- `tests/backend/` - Backend API and service tests
+- `tests/agents/` - Agent behavior and integration tests
+
+Run tests with:
+
+```bash
+pytest tests/ -v
 ```
+
+## Database Migrations
+
+Supabase migrations are stored in `data/supabase/migrations/`. To apply migrations:
+
+```bash
+# Using Supabase CLI
+supabase db push
+
+# Or manually execute SQL files
+psql -f data/supabase/migrations/init_schema.sql
+psql -f data/supabase/migrations/init_rls.sql
+```
+
+## Documentation
+
+Additional documentation is available in the `docs/` directory:
+
+- [Pause/Resume Guide](docs/PAUSE_RESUME_GUIDE.md) - Guide for pausing and resuming work
+- [Legacy README](docs/README_legacy.md) - Original project documentation
+
+## Contributing
+
+1. Create a feature branch from `main`
+2. Make your changes following the project structure
+3. Add tests for new functionality
+4. Run the test suite to ensure everything passes
+5. Submit a pull request
+
+## License
+
+See [LICENSE](LICENSE) for details.
+
+## Version History
+
+- **Monorepo Migration** - Reorganized into monorepo structure with separate backend, agents, and frontend
+- **baseline/v1.0** - Initial release with basic measurement and recommendation API
+
+## Rollback
+
+To rollback to the pre-monorepo structure:
+
+```bash
 git checkout baseline/v1.0
 ```
 
-Badges (placeholders)
+## Support
 
-Add CI / coverage badges here once configured.
+For issues, questions, or contributions, please open an issue on GitHub.
 
-- Vendor integration: implement fetch_real_vendor in `vendor_client.py` and keep VENDOR_MODE switch.
-- Normalization: add mappers in `normalize.py` if a vendor introduces new fields.
-- Fit rules: replace placeholder logic in `fit_rules_tops.py` and `fit_rules_bottoms.py` with size charts and ease variants, plus unit tests.
-
-## Roll back
-
-This repo is tagged at baseline/v1.0.
-
-```
-git checkout baseline/v1.0
-```
-
-## Badges (placeholders)
-
-Add CI / coverage badges here once configured.
