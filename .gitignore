@@ -29,10 +29,15 @@ dist/
 
 # Byte-compiled / optimized / DLL files
 *.so
+*.pyo
+*.pyd
+*.pdb
+*.egg
 
 # Coverage
 .coverage
 coverage.xml
+coverage/
 
 # mypy
 .mypy_cache/
