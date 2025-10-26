@@ -1,26 +1,35 @@
 from src.server.measure_schema import BodyMeasurements
 
+
+def _val(v: dict, key: str):
+    """Safe extractor for vendor values: returns the numeric value or None."""
+    return v.get(key, {}).get("value") if isinstance(v, dict) else None
+
+
 def normalize_vendor(vendor: dict) -> BodyMeasurements:
     v = vendor
+    chest_val = _val(v, "chest")
+    underbust_default = chest_val * 0.9 if chest_val is not None else None
+
     return BodyMeasurements(
-        neck_cm=v["neck"]["value"],
-        shoulder_cm=v["shoulder"]["value"],
-        chest_cm=v["chest"]["value"],
-        underbust_cm=v.get("underbust", {"value": v["chest"]["value"] * 0.9})["value"],
-        waist_natural_cm=v["waist"]["value"],
-        sleeve_cm=v["sleeve"]["value"],
-        bicep_cm=v["bicep"]["value"],
-        forearm_cm=v["forearm"]["value"],
-        hip_low_cm=v["hip_low"]["value"],
-        thigh_cm=v["thigh"]["value"],
-        knee_cm=v["knee"]["value"],
-        calf_cm=v["calf"]["value"],
-        ankle_cm=v["ankle"]["value"],
-        front_rise_cm=v["front_rise"]["value"],
-        back_rise_cm=v["back_rise"]["value"],
-        inseam_cm=v["inseam"]["value"],
-        outseam_cm=v["outseam"]["value"],
+        neck_cm=_val(v, "neck"),
+        shoulder_cm=_val(v, "shoulder"),
+        chest_cm=chest_val,
+        underbust_cm=v.get("underbust", {"value": underbust_default})["value"],
+        waist_natural_cm=_val(v, "waist"),
+        sleeve_cm=_val(v, "sleeve"),
+        bicep_cm=_val(v, "bicep"),
+        forearm_cm=_val(v, "forearm"),
+        hip_low_cm=_val(v, "hip_low"),
+        thigh_cm=_val(v, "thigh"),
+        knee_cm=_val(v, "knee"),
+        calf_cm=_val(v, "calf"),
+        ankle_cm=_val(v, "ankle"),
+        front_rise_cm=_val(v, "front_rise"),
+        back_rise_cm=_val(v, "back_rise"),
+        inseam_cm=_val(v, "inseam"),
+        outseam_cm=_val(v, "outseam"),
         source="vendor",
-        vendor_version=v.get("source_version","unknown"),
+        vendor_version=v.get("source_version", "unknown"),
         confidence=0.92
     )
