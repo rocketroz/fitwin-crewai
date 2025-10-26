@@ -10,3 +10,17 @@ def fetch_two_photo_stub(session_id: str) -> dict:
         "inseam": {"value": 76.0}, "outseam": {"value": 100.0},
         "source_version": "stub-2photo"
     }
+
+
+def fetch_real_vendor(session_id: str) -> dict:
+    """Placeholder for a real vendor client.
+
+    Returns a small dictionary indicating not-implemented so callers can handle it.
+    Replace this with a real HTTP client calling your vendor API and returning the
+    vendor-specific payload expected by `normalize_vendor`.
+    """
+    return {
+        "error": "not_implemented",
+        "message": "fetch_real_vendor is a placeholder. Implement real vendor integration.",
+        "session_id": session_id,
+    }
