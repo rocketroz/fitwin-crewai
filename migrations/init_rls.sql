@@ -1,0 +1,2 @@
+-- Placeholder RLS notes. Apply real policies in Supabase project.
+-- alter table measurements enable row level security;
