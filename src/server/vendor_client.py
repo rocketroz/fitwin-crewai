@@ -15,12 +15,14 @@ def fetch_two_photo_stub(session_id: str) -> dict:
 def fetch_real_vendor(session_id: str) -> dict:
     """Placeholder for a real vendor client.
 
-    Returns a small dictionary indicating not-implemented so callers can handle it.
+    Returns a vendor-shaped payload with None values to indicate the integration
+    is not yet implemented. This avoids KeyError during normalization while
+    making it explicit the values are missing.
     Replace this with a real HTTP client calling your vendor API and returning the
     vendor-specific payload expected by `normalize_vendor`.
     """
-    return {
-        "error": "not_implemented",
-        "message": "fetch_real_vendor is a placeholder. Implement real vendor integration.",
-        "session_id": session_id,
-    }
+    keys = [
+        "neck","shoulder","chest","underbust","waist","sleeve","bicep","forearm",
+        "hip_low","thigh","knee","calf","ankle","front_rise","back_rise","inseam","outseam"
+    ]
+    return {k: {"value": None} for k in keys} | {"source_version": "real-placeholder", "session_id": session_id}
