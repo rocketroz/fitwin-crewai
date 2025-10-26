@@ -1,14 +1,14 @@
 from fastapi import APIRouter
-from src.server.normalize import normalize_vendor
-from src.server.models import MeasurementsResponse
-from src.server.settings import settings
+from backend.app.core.utils import normalize_vendor
+from backend.app.schemas.models import MeasurementsResponse
+from backend.app.core.config import settings
 
 # Conditional vendor client selection based on VENDOR_MODE
 if settings.vendor_mode == "stub":
-    from src.server.vendor_client import fetch_two_photo_stub as fetch_measurements
+    from backend.app.services.vendor_client import fetch_two_photo_stub as fetch_measurements
 else:
     # Placeholder for real vendor client implementation
-    from src.server.vendor_client import fetch_real_vendor as fetch_measurements
+    from backend.app.services.vendor_client import fetch_real_vendor as fetch_measurements
 
 router = APIRouter(prefix="/measurements", tags=["measurements"])
 

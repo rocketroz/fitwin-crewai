@@ -1,4 +1,4 @@
-from src.server.measure_schema import BodyMeasurements
+from backend.app.schemas.measure_schema import BodyMeasurements
 
 
 def _val(v: dict, key: str):

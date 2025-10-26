@@ -1,9 +1,9 @@
 from fastapi import APIRouter
-from src.server.vendor_client import fetch_two_photo_stub
-from src.server.normalize import normalize_vendor
-from src.server.fit_rules_tops import recommend_top
-from src.server.fit_rules_bottoms import recommend_bottom
-from src.server.models import DMAASResponse
+from backend.app.services.vendor_client import fetch_two_photo_stub
+from backend.app.core.utils import normalize_vendor
+from backend.app.services.fit_rules_tops import recommend_top
+from backend.app.services.fit_rules_bottoms import recommend_bottom
+from backend.app.schemas.models import DMAASResponse
 
 router = APIRouter(prefix="/dmaas", tags=["dmaas"])
 

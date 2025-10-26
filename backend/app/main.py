@@ -1,6 +1,6 @@
 from fastapi import FastAPI
-from src.server.api.measurement_job import router as measurements
-from src.server.api.dmaas import router as dmaas
+from backend.app.routers.measurement_job import router as measurements
+from backend.app.routers.dmaas import router as dmaas
 
 app = FastAPI(title="FitTwin Local Stub")
 app.include_router(measurements)
