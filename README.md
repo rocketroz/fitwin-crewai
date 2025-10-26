@@ -1,5 +1,7 @@
 # FitTwin (local stub)
 
+Author: Laura Tornga (@rocketroz)
+
 Two-photo measurement mapping for upper and lower body with safe, offline tests. The API returns a normalized body measurement schema and simple recommendations for tops and bottoms. The code runs locally and does not call external vendors by default.
 
 ## Quick start
