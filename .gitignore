@@ -26,6 +26,7 @@ dist/
 # Environment files
 .env
 .env.*
+!agents/.env.example
 
 # Byte-compiled / optimized / DLL files
 *.so
