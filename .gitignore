@@ -1,0 +1,38 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtualenv
+.venv/
+venv/
+env/
+ENV/
+
+# Packaging
+build/
+dist/
+*.egg-info/
+
+# Pytest
+.pytest_cache/
+
+# VS Code
+.vscode/
+
+# Mac
+.DS_Store
+
+# Environment files
+.env
+.env.*
+
+# Byte-compiled / optimized / DLL files
+*.so
+
+# Coverage
+.coverage
+coverage.xml
+
+# mypy
+.mypy_cache/
