@@ -21,3 +21,15 @@ python agents/crew/bootstrap.py
 ```
 
 This script is intentionally minimal — replace the example agents, tasks, and model names to match your environment.
+
+## Prefer environment variables for secrets (recommended)
+
+To avoid storing secrets in files, set the `OPENAI_API_KEY` environment variable and run the provided helper script:
+
+```bash
+export OPENAI_API_KEY="sk-..."
+export AGENT_MODEL="gpt-4o-mini"  # optional
+./scripts/run_agents_env.sh
+```
+
+The helper script will activate `.venv-agents` if present and will fail early if `OPENAI_API_KEY` is not set.
