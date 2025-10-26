@@ -52,6 +52,24 @@ source .venv/bin/activate
 pip install -r backend/requirements.txt
 ```
 
+### Dev environment (recommended)
+
+For repeatable local testing and development (tests were validated with these pins), create and use a dev requirements file. This avoids accidental upgrades of transitive packages that can break the TestClient/Test dependencies.
+
+```bash
+# Create and activate venv (if you haven't already)
+python3 -m venv .venv
+source .venv/bin/activate
+
+# Install pinned dev/test dependencies
+pip install -r requirements-dev.txt
+
+# Run tests
+bash scripts/test_all.sh
+```
+
+Note: `requirements-dev.txt` pins `httpx==0.23.3`, `pydantic==1.10.24`, and other dev/test packages used to verify CI locally. If you use other tools that require newer versions (for example `crewai`, `chromadb`, or `mcp`), create a separate venv for those workflows to avoid conflicts.
+
 ### 2. Configuration
 
 ```bash
