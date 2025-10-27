@@ -1,6 +1,20 @@
-fastapi==0.95.2
-uvicorn==0.22.0
-pytest==7.4.0
-httpx>=0.24.0
-# Optional helpers for multipart/form uploads/tests
-python-multipart==0.0.6
+# FitTwin DMaaS API - Backend Dependencies
+
+# Web framework stack
+fastapi==0.115.0
+uvicorn[standard]==0.30.6
+pydantic==2.9.2
+python-multipart==0.0.12
+
+# Data access
+supabase==2.9.0
+psycopg2-binary==2.9.9
+python-dotenv==1.0.1
+
+# HTTP clients
+requests==2.32.3
+
+# Testing and tooling
+pytest==8.3.3
+pytest-cov==5.0.0
+pytest-asyncio==0.24.0
