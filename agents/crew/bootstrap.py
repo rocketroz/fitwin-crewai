@@ -1,25 +1,17 @@
-"""agents/crew/bootstrap.py
-CrewAI v1.x-compatible example using typed LLM objects.
-
-"""
-
 import os
 from crewai import Agent, Task, Crew, LLM
+from agents.client.api import dmaas_latest
 
 def main():
-    # Ensure API key is provided via environment variable
     api_key = os.getenv("OPENAI_API_KEY")
     if not api_key:
-        raise RuntimeError("OPENAI_API_KEY not found in environment.")
-
-    # Create the LLM object CrewAI expects
+            raise RuntimeError("OPENAI_API_KEY not found in environment.")
     llm = LLM(model=os.getenv("AGENT_MODEL", "gpt-4o-mini"), api_key=api_key)
 
-    # Define the two cooperating agents
     planner = Agent(
         role="Planner",
-        goal="Define FitTwin build tasks clearly and concisely",
-        backstory="You are a technical planner who designs next steps for FitTwin's product roadmap.",
+        goal="Inspect FitTwin API data and propose next engineering steps",
+        backstory="You think like a staff engineer who ships.",
         llm=llm,
         verbose=True,
     )
@@ -27,28 +19,67 @@ def main():
     executor = Agent(
         role="Executor",
         goal="Turn plans into a numbered, actionable checklist",
-        backstory="You translate abstract ideas into concise development steps.",
+        backstory="You write precise steps that run today.",
         llm=llm,
         verbose=True,
     )
 
-    # Define tasks for each agent
-    plan_task = Task(
-        description="List three next steps for FitTwin's iPhone upload feature.",
+        # Pull live data from the backend
+        data = {}
+        try:
+            data = dmaas_latest()
+        except Exception as e:
+            data = {"error": f"Could not reach /dmaas/latest: {e}"}
+import os
+from crewai import Agent, Task, Crew, LLM
+from agents.client.api import dmaas_latest
+
+def main():
+    api_key = os.getenv("OPENAI_API_KEY")
+    if not api_key:
+        raise RuntimeError("OPENAI_API_KEY not found in environment.")
+    llm = LLM(model=os.getenv("AGENT_MODEL", "gpt-4o-mini"), api_key=api_key)
+
+    planner = Agent(
+        role="Planner",
+        goal="Inspect live FitTwin API data and describe implications for the iPhone upload feature.",
+        backstory="You think like a staff engineer who ships pragmatic solutions.",
+        llm=llm,
+        verbose=True,
+    )
+
+    executor = Agent(
+        role="Executor",
+        goal="Turn the plan into a numbered checklist with concrete steps.",
+        backstory="You write precise, do-this-now instructions for developers.",
+        llm=llm,
+        verbose=True,
+    )
+
+    # Pull live data from the backend
+    data = {}
+    try:
+        data = dmaas_latest()
+    except Exception as e:
+        data = {"error": f"Could not reach /dmaas/latest: {e}"}
+
+    t1 = Task(
+        description=(
+            "Given this /dmaas/latest JSON, briefly explain what it shows and list two implications "
+            "for implementing the iPhone upload feature:\n\n"
+            f"{data}"
+        ),
         agent=planner,
-        expected_output="Three short, clear next steps.",
+        expected_output="One short paragraph and two bullet points on implications.",
     )
 
-    execute_task = Task(
-        description="Convert the Planner's output into a numbered checklist that developers can follow today.",
+    t2 = Task(
+        description="Convert the planner notes into a numbered checklist with 3 to 5 concrete steps.",
         agent=executor,
-        expected_output="A numbered checklist with 3–5 steps.",
+        expected_output="A numbered checklist with specific commands, files, or endpoints."
     )
 
-    # Assemble and run the crew
-    crew = Crew(agents=[planner, executor], tasks=[plan_task, execute_task])
-    result = crew.kickoff()
-
+    result = Crew(agents=[planner, executor], tasks=[t1, t2]).kickoff()
     print("\n=== Crew Output ===\n")
     print(result)
 

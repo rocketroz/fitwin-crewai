@@ -1,5 +1,6 @@
 fastapi==0.95.2
 uvicorn==0.22.0
 pytest==7.4.0
+requests==2.32.3
 # Optional helpers for multipart/form uploads/tests
 python-multipart==0.0.6
