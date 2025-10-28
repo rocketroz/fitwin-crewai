@@ -16,6 +16,15 @@ try:  # Pydantic v2 support
     from pydantic import ConfigDict  # type: ignore
 except ImportError:  # pragma: no cover - pydantic v1 fallback
     ConfigDict = None
+Measurement schemas for input validation and normalization.
+
+This module defines the canonical measurement names, unit enum, and schemas
+for input, MediaPipe landmarks, and normalized output.
+"""
+
+from pydantic import BaseModel, Field, validator
+from enum import Enum
+from typing import Optional, List
 
 
 class Unit(str, Enum):
@@ -54,6 +63,14 @@ class MeasurementInput(BaseModel):
     arkit_body_anchor: Optional[dict] = None
     arkit_depth_map: Optional[str] = None
 
+    """Input schema for measurements with flexible units and MediaPipe data from all platforms."""
+    # Platform identification
+    source_type: str = "mediapipe_web"  # "arkit_lidar", "mediapipe_native", "mediapipe_web", "user_input"
+    platform: str = "web_mobile"  # "ios", "android", "web_mobile", "web_desktop"
+    
+    # ARKit LiDAR data (iOS native only)
+    arkit_body_anchor: Optional[dict] = None
+    arkit_depth_map: Optional[str] = None
     # Core measurements (optional, can be calculated from landmarks)
     height: Optional[float] = None
     neck: Optional[float] = None
@@ -127,6 +144,42 @@ class MeasurementInput(BaseModel):
 class MeasurementNormalized(BaseModel):
     """Normalized measurement schema (all values in centimeters)."""
 
+    
+    # Unit and metadata
+    unit: Unit = Unit.CM
+    session_id: Optional[str] = None
+    
+    # MediaPipe data (native apps + web)
+    front_landmarks: Optional[MediaPipeLandmarks] = None
+    side_landmarks: Optional[MediaPipeLandmarks] = None
+    
+    # Web-specific metadata
+    browser_info: Optional[dict] = None
+    processing_location: Optional[str] = None  # "client", "server"
+    
+    # Photo URLs (for storage and future model training)
+    front_photo_url: Optional[str] = None
+    side_photo_url: Optional[str] = None
+    
+    # Device metadata
+    device_id: Optional[str] = None
+
+    class Config:
+        extra = "allow"
+
+    @validator('*', pre=True)
+    def check_positive(cls, v, field):
+        """Validate that numeric measurements are positive."""
+        if field.name in ['unit', 'session_id', 'front_landmarks', 'side_landmarks', 
+                          'front_photo_url', 'side_photo_url']:
+            return v
+        if v is not None and isinstance(v, (int, float)) and v <= 0:
+            raise ValueError(f"{field.name} must be positive")
+        return v
+
+
+class MeasurementNormalized(BaseModel):
+    """Normalized measurement schema (all in cm) with confidence scores."""
     height_cm: float
     neck_cm: float
     shoulder_cm: float
@@ -158,3 +211,17 @@ class MeasurementNormalized(BaseModel):
     side_photo_url: Optional[str] = None
     front_landmarks_id: Optional[str] = None
     side_landmarks_id: Optional[str] = None
+    
+    # Metadata
+    source: str = "mediapipe"  # "mediapipe", "user_input", "vendor_api"
+    model_version: str = "v1.0-mediapipe"
+    confidence: float = Field(ge=0, le=1, default=1.0)
+    accuracy_estimate: Optional[float] = None  # Estimated % error
+    session_id: Optional[str] = None
+    
+    # Provenance
+    front_photo_url: Optional[str] = None
+    side_photo_url: Optional[str] = None
+    front_landmarks_id: Optional[str] = None  # Reference to stored landmarks
+    side_landmarks_id: Optional[str] = None
+
