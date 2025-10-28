@@ -16,6 +16,11 @@
 		6A0F0F5C29F8C69700A1B2C3 /* CaptureSessionState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6A0F0F5C29F8C69200A1B2C3 /* CaptureSessionState.swift */; };
 		6A0F0F5C29F8C69800A1B2C3 /* CameraPermissionManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6A0F0F5C29F8C69300A1B2C3 /* CameraPermissionManager.swift */; };
 		6A0F0F5C29F8C69A00A1B2C3 /* ARKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 6A0F0F5C29F8C69900A1B2C3 /* ARKit.framework */; };
+		6A0F0F5C29F8C69C00A1B2C3 /* CapturedPhoto.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6A0F0F5C29F8C69F00A1B2C3 /* CapturedPhoto.swift */; };
+		6A0F0F5C29F8C69D00A1B2C3 /* LiDARSessionController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6A0F0F5C29F8C6A000A1B2C3 /* LiDARSessionController.swift */; };
+		6A0F0F5C29F8C69E00A1B2C3 /* LiDARPreviewView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6A0F0F5C29F8C6A100A1B2C3 /* LiDARPreviewView.swift */; };
+		6A0F0F5C29F8C6A410A1B2C3 /* LiDARMeasurementCalculator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6A0F0F5C29F8C6A200A1B2C3 /* LiDARMeasurementCalculator.swift */; };
+		6A0F0F5C29F8C6A430A1B2C3 /* FitTwinAPI.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6A0F0F5C29F8C6A300A1B2C3 /* FitTwinAPI.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -25,6 +30,11 @@
 		6A0F0F5C29F8C65200A1B2C3 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		6A0F0F5C29F8C65300A1B2C3 /* Resources/Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Resources/Info.plist; sourceTree = "<group>"; };
 		6A0F0F5C29F8C65500A1B2C3 /* Preview Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; name = "Preview Assets.xcassets"; path = "Preview Content/Preview Assets.xcassets"; sourceTree = "<group>"; };
+		6A0F0F5C29F8C69F00A1B2C3 /* CapturedPhoto.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CapturedPhoto.swift; sourceTree = "<group>"; };
+		6A0F0F5C29F8C6A000A1B2C3 /* LiDARSessionController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LiDARSessionController.swift; sourceTree = "<group>"; };
+		6A0F0F5C29F8C6A100A1B2C3 /* LiDARPreviewView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LiDARPreviewView.swift; sourceTree = "<group>"; };
+		6A0F0F5C29F8C6A200A1B2C3 /* LiDARMeasurementCalculator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LiDARMeasurementCalculator.swift; sourceTree = "<group>"; };
+		6A0F0F5C29F8C6A300A1B2C3 /* FitTwinAPI.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FitTwinAPI.swift; sourceTree = "<group>"; };
 		6A0F0F5C29F8C69000A1B2C3 /* CaptureFlowView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CaptureFlowView.swift; sourceTree = "<group>"; };
 		6A0F0F5C29F8C69100A1B2C3 /* CaptureFlowViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CaptureFlowViewModel.swift; sourceTree = "<group>"; };
 		6A0F0F5C29F8C69200A1B2C3 /* CaptureSessionState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CaptureSessionState.swift; sourceTree = "<group>"; };
@@ -79,8 +89,13 @@
 			children = (
 				6A0F0F5C29F8C69000A1B2C3 /* CaptureFlowView.swift */,
 				6A0F0F5C29F8C69100A1B2C3 /* CaptureFlowViewModel.swift */,
+				6A0F0F5C29F8C69F00A1B2C3 /* CapturedPhoto.swift */,
 				6A0F0F5C29F8C69300A1B2C3 /* CameraPermissionManager.swift */,
 				6A0F0F5C29F8C69200A1B2C3 /* CaptureSessionState.swift */,
+				6A0F0F5C29F8C6A000A1B2C3 /* LiDARSessionController.swift */,
+				6A0F0F5C29F8C6A100A1B2C3 /* LiDARPreviewView.swift */,
+				6A0F0F5C29F8C6A200A1B2C3 /* LiDARMeasurementCalculator.swift */,
+				6A0F0F5C29F8C6A300A1B2C3 /* FitTwinAPI.swift */,
 			);
 			path = CaptureFlow;
 			sourceTree = "<group>";
@@ -163,6 +178,11 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				6A0F0F5C29F8C6A430A1B2C3 /* FitTwinAPI.swift in Sources */,
+				6A0F0F5C29F8C69C00A1B2C3 /* CapturedPhoto.swift in Sources */,
+				6A0F0F5C29F8C69D00A1B2C3 /* LiDARSessionController.swift in Sources */,
+				6A0F0F5C29F8C69E00A1B2C3 /* LiDARPreviewView.swift in Sources */,
+				6A0F0F5C29F8C6A410A1B2C3 /* LiDARMeasurementCalculator.swift in Sources */,
 				6A0F0F5C29F8C69800A1B2C3 /* CameraPermissionManager.swift in Sources */,
 				6A0F0F5C29F8C69700A1B2C3 /* CaptureSessionState.swift in Sources */,
 				6A0F0F5C29F8C69600A1B2C3 /* CaptureFlowViewModel.swift in Sources */,
