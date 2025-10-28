@@ -10,5 +10,8 @@ echo "Running backend tests..."
 pytest tests/backend/ -v
 
 echo ""
-echo "All tests passed!"
+echo "Running agent tool tests..."
+pytest tests/agents/ -v
 
+echo ""
+echo "All tests passed!"

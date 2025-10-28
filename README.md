@@ -2,235 +2,156 @@
 
 **Author:** Laura Tornga (@rocketroz)
 
-A comprehensive monorepo for the FitTwin project, including backend API, CrewAI agents, frontend components, and data management. The backend provides two-photo measurement mapping for upper and lower body with normalized body measurement schema and size recommendations.
+Unified workspace for the FitTwin MediaPipe MVP: FastAPI backend, CrewAI agents, Supabase migrations, and both the current capture stub and the legacy Manus web app. The backend now exposes the DMaaS `/measurements/validate` and `/measurements/recommend` endpoints described in the FitTwin spec (see `docs/spec`).
 
 ## Project Structure
 
 ```
 fitwin-crewai/
-├── agents/              # CrewAI multi-agent system
-│   ├── crew/           # Agent implementations
-│   ├── config/         # Agent configurations
-│   ├── prompts/        # Agent prompts
-│   └── tools/          # Agent tools
-├── backend/            # FastAPI backend application
+├── agents/                # CrewAI multi-agent system
+│   ├── crew/              # Agent implementations (includes Manus measurement crew)
+│   ├── config/            # Agent configurations
+│   ├── prompts/           # Prompt assets
+│   └── tools/             # Shared CrewAI tools (retry & circuit breaker logic)
+├── backend/               # FastAPI backend application
 │   └── app/
-│       ├── routers/    # API endpoints
-│       ├── schemas/    # Pydantic models
-│       ├── services/   # Business logic
-│       └── core/       # Configuration and utilities
-├── data/               # Data and database files
+│       ├── core/          # Config + validation helpers
+│       ├── routers/       # API endpoints (MediaPipe DMaaS routes)
+│       ├── schemas/       # Pydantic models and error envelopes
+│       └── services/      # Fit rule placeholders and vendor glue
+├── data/                  # Database and Supabase assets
 │   └── supabase/
-│       ├── migrations/ # Database migrations
-│       └── sql/        # SQL scripts
-├── docs/               # Documentation
-│   ├── runbooks/       # Operational guides
+│       ├── migrations/    # Init + measurement provenance migrations
+│       └── README.md      # Supabase setup guide
+├── docs/
+│   ├── runbooks/          # Operational guides
+│   ├── spec/              # Manus spec-kit (speckit, deployment guide, env template)
 │   └── PAUSE_RESUME_GUIDE.md
-├── frontend/           # Frontend application
-│   └── src/
-├── scripts/            # Utility scripts
-├── tests/              # Test suites
-│   ├── backend/        # Backend tests
-│   └── agents/         # Agent tests
-└── README.md
+├── frontend/
+│   ├── src/               # Current capture stub
+│   └── legacy_web_app/    # Manus Vite/React implementation package
+├── scripts/               # Helper scripts (dev server, test runner, agents)
+├── tests/
+│   ├── backend/           # Backend / FastAPI tests (validate + recommend flows)
+│   └── agents/            # CrewAI tool tests with mocks
+└── CHANGELOG.md
 ```
 
 ## Quick Start
 
-### 1. Setup
+See `AGENTS.md` for contributor guidelines, coding conventions, and PR expectations.
+
+### 1. Environment
 
 ```bash
-# Clone the repository
-git clone https://github.com/rocketroz/fitwin-crewai.git
-cd fitwin-crewai
-
-# Create and activate virtual environment
 python3 -m venv .venv
 source .venv/bin/activate
-
-# Install dependencies
-pip install -r backend/requirements.txt
-```
-
-### Dev environment (recommended)
-
-For repeatable local testing and development (tests were validated with these pins), create and use a dev requirements file. This avoids accidental upgrades of transitive packages that can break the TestClient/Test dependencies.
-
-```bash
-# Create and activate venv (if you haven't already)
-python3 -m venv .venv
-source .venv/bin/activate
-
-# Install pinned dev/test dependencies
 pip install -r requirements-dev.txt
-
-# Run tests
-bash scripts/test_all.sh
 ```
 
-Note: `requirements-dev.txt` pins `httpx==0.23.3`, `pydantic==1.10.24`, and other dev/test packages used to verify CI locally. If you use other tools that require newer versions (for example `crewai`, `chromadb`, or `mcp`), create a separate venv for those workflows to avoid conflicts.
+`requirements-dev.txt` pulls in the FastAPI/Pydantic 2 stack (`fastapi==0.115.0`, `pydantic==2.9.2`, `httpx==0.27.2`) along with linting tools. If you need a different toolchain (e.g., experimental CrewAI releases), create a separate virtualenv.
 
 ### 2. Configuration
 
 ```bash
-# Copy environment templates
 cp backend/.env.example backend/.env
 cp agents/.env.example agents/.env
-
-# Edit the .env files with your configuration
 ```
+
+Populate the following values:
+
+- `API_KEY` — Shared secret for `/measurements/*` requests (defaults to `staging-secret-key`).
+- Supabase credentials (`SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`) if you plan to run migrations or store provenance data.
+- Agent secrets (`OPENAI_API_KEY`, etc.) for CrewAI flows.
 
 ### 3. Run the Backend
 
 ```bash
-# Using the convenience script
 bash scripts/dev_server.sh
-
-# Or manually
+# or
 export PYTHONPATH="${PYTHONPATH}:$(pwd)"
 uvicorn backend.app.main:app --reload --host 0.0.0.0 --port 8000
 ```
 
-The API will be available at `http://127.0.0.1:8000/docs` (Swagger UI).
+Swagger UI: <http://127.0.0.1:8000/docs>
 
-### 4. Run Tests
-
-```bash
-# Run all tests
-bash scripts/test_all.sh
-
-# Or run specific test suites
-pytest tests/backend/ -v
-```
-
-### 5. Run Agents
+### 4. Tests
 
 ```bash
-# Run CrewAI agents
-bash scripts/run_agents.sh
+bash scripts/test_all.sh          # Runs backend + agent suites
+pytest tests/backend/ -v          # Backend only
+pytest tests/agents/ -v           # Agent tool mocks
 ```
+
+## Reference Documentation
+
+- `docs/spec/speckit.md` / `speckit_v2.pdf` — Full MediaPipe MVP technical spec.
+- `docs/spec/deployment_guide.md` — Step-by-step deployment playbook.
+- `docs/spec/ENV_TEMPLATE.md` — Environment variable template used in Manus package.
+- `docs/spec/README.manus.md` — Original Manus package README for historical context.
 
 ## API Endpoints
 
-### Measurements Endpoint
+All endpoints require an `X-API-Key` header (default: `staging-secret-key`).
+
+**Validate measurements**
 
 ```bash
-curl -s http://127.0.0.1:8000/measurements/ | python -m json.tool
+curl -s -X POST http://127.0.0.1:8000/measurements/validate   -H "Content-Type: application/json"   -H "X-API-Key: staging-secret-key"   -d '{"waist_natural": 32, "hip_low": 40, "unit": "in", "session_id": "readme-demo"}'   | python -m json.tool
 ```
 
-Returns normalized body measurements from the vendor API.
+Returns normalized centimeter measurements, confidence score, and provenance IDs. If landmarks are included, the MediaPipe calculation scaffold runs (currently placeholder geometry to be replaced with real formulas).
 
-### DMaaS (Digital Measurement as a Service) Endpoint
+**Recommend sizes**
 
 ```bash
-curl -s http://127.0.0.1:8000/dmaas/latest | python -m json.tool
+curl -s -X POST http://127.0.0.1:8000/measurements/recommend   -H "Content-Type: application/json"   -H "X-API-Key: staging-secret-key"   -d '{"waist_natural_cm": 81.28, "hip_low_cm": 101.6, "chest_cm": 101.6, "model_version": "v1.0-mediapipe"}'   | python -m json.tool
 ```
 
-Returns measurements plus size recommendations for tops and bottoms.
+Returns stubbed tops/bottoms recommendations plus the processed measurement payload. Replace the placeholder logic in `backend/app/routers/measurements.py` once production fit rules are ready.
 
-## Environment Variables
+Health probes:
 
-### Backend (`backend/.env`)
+- `GET /` — Readiness message with version + docs link.
+- `GET /health` — Basic health status payload (extend with DB checks as needed).
 
-- `ENV` - Application environment (dev, test, prod). Default: `dev`
-- `VENDOR_MODE` - Vendor integration mode (`stub` or `real`). Default: `stub`
+## Frontend
 
-### Agents (`agents/.env`)
+- `frontend/src/photoCaptureStub.js` — Lightweight stub used during Codex development.
+- `frontend/legacy_web_app/` — Manus Vite/React implementation (camera flows, TODOs, package.json). Use `pnpm install` inside that folder to run the full experience.
 
-- `OPENAI_API_KEY` - OpenAI API key for CrewAI agents
-- `AGENT_MODEL` - LLM model to use (e.g., `gpt-4`)
-- `AGENT_TEMPERATURE` - Temperature setting for agent responses
+## Agents
 
-## Development Guide
+- `agents/tools/measurement_tools.py` — Validate/recommend tools with timeout, retry, and circuit breaker logic.
+- `agents/crew/measurement_crew.py` — Five-agent crew (CEO, Architect, ML Engineer, DevOps, Reviewer) reflecting the spec’s directives.
 
-### Vendor Integration
-
-Implement real vendor integration in `backend/app/services/vendor_client.py`:
-
-```python
-def fetch_real_vendor(session_id: str) -> dict:
-    # Replace with actual vendor API call
-    response = requests.post(VENDOR_API_URL, json={"session_id": session_id})
-    return response.json()
-```
-
-Then set `VENDOR_MODE=real` in your environment.
-
-### Normalization
-
-Add custom mappers in `backend/app/core/utils.py` if vendors introduce new measurement fields.
-
-### Fit Rules
-
-Enhance size recommendation logic in:
-- `backend/app/services/fit_rules_tops.py` - Top garment sizing
-- `backend/app/services/fit_rules_bottoms.py` - Bottom garment sizing
-
-Replace placeholder logic with actual size charts, ease calculations, and comprehensive unit tests.
-
-### Agent Development
-
-Add new agents in `agents/crew/` and configure them in `agents/config/`.
-
-## Testing
-
-The project uses pytest for testing. Test files are organized by component:
-
-- `tests/backend/` - Backend API and service tests
-- `tests/agents/` - Agent behavior and integration tests
-
-Run tests with:
+Run the crew locally:
 
 ```bash
-pytest tests/ -v
+source .venv/bin/activate
+python agents/crew/measurement_crew.py
 ```
 
-## Database Migrations
+## Database / Supabase
 
-Supabase migrations are stored in `data/supabase/migrations/`. To apply migrations:
+1. `supabase db push` (or run SQL files manually) to apply `init_schema`, `init_rls`, and `002_measurement_provenance.sql`.
+2. Ensure a storage bucket exists for photo uploads if you intend to capture provenance.
+3. RLS policies restrict access to user-owned rows; service role has full read/write for DMaaS operations.
 
-```bash
-# Using Supabase CLI
-supabase db push
+See `data/supabase/README.md` for configuration details.
 
-# Or manually execute SQL files
-psql -f data/supabase/migrations/init_schema.sql
-psql -f data/supabase/migrations/init_rls.sql
-```
+## Testing & CI
 
-## Documentation
+- `scripts/test_all.sh` calls the backend pytest suite plus agent unit tests.
+- GitHub Actions workflow (`.github/workflows/ci.yml`) installs `requirements-dev.txt`, runs backend tests, and exercises the Python CLI smoke tests. Extend with lint or Supabase deploy steps as needed (the legacy Manus workflow is preserved in `docs/spec/README.manus.md`).
 
-Additional documentation is available in the `docs/` directory:
+## Changelog
 
-- [Pause/Resume Guide](docs/PAUSE_RESUME_GUIDE.md) - Guide for pausing and resuming work
-- [Legacy README](docs/README_legacy.md) - Original project documentation
+Legacy Manus changelog is available at `CHANGELOG.md`. Record new entries using the same format (date + summary).
 
-## Contributing
+## Next Steps
 
-1. Create a feature branch from `main`
-2. Make your changes following the project structure
-3. Add tests for new functionality
-4. Run the test suite to ensure everything passes
-5. Submit a pull request
-
-## License
-
-See [LICENSE](LICENSE) for details.
-
-## Version History
-
-- **Monorepo Migration** - Reorganized into monorepo structure with separate backend, agents, and frontend
-- **baseline/v1.0** - Initial release with basic measurement and recommendation API
-
-## Rollback
-
-To rollback to the pre-monorepo structure:
-
-```bash
-git checkout baseline/v1.0
-```
-
-## Support
-
-For issues, questions, or contributions, please open an issue on GitHub.
-
+- Replace placeholder geometry in `backend/app/core/validation.py` with real MediaPipe calculations.
+- Wire production fit rules into `backend/app/routers/measurements.py` (or dedicated services).
+- Decide whether the Manus web app becomes the primary frontend or remains archived.
+- Integrate Supabase migrations into CI/CD if automatic deploys are required.

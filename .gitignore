@@ -5,6 +5,7 @@ __pycache__/
 
 # Virtualenv
 .venv/
+.venv-*/
 venv/
 env/
 ENV/
@@ -42,3 +43,6 @@ coverage/
 
 # mypy
 .mypy_cache/
+
+# Node
+frontend/legacy_web_app/node_modules/
