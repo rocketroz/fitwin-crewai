@@ -152,7 +152,8 @@ struct CaptureFlowView: View {
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding()
-        .background(.ultraThinMaterial.opacity(0.85), in: RoundedRectangle(cornerRadius: 16))
+        .background(Color(uiColor: .systemBackground), in: RoundedRectangle(cornerRadius: 16))
+        .shadow(color: .black.opacity(0.05), radius: 8, x: 0, y: 4)
     }
     
     private func countdownView(seconds: Int) -> some View {
@@ -194,7 +195,8 @@ struct CaptureFlowView: View {
             }
         }
         .padding()
-        .background(.ultraThinMaterial.opacity(0.85), in: RoundedRectangle(cornerRadius: 16))
+        .background(Color(uiColor: .systemBackground), in: RoundedRectangle(cornerRadius: 16))
+        .shadow(color: .black.opacity(0.05), radius: 8, x: 0, y: 4)
     }
 }
 
