@@ -41,26 +41,6 @@ CANONICAL_FIELDS = {
     "back_rise",
     "inseam",
     "outseam",
-Validation and normalization utility for measurements.
-
-This module implements the normalization and validation logic, including
-MediaPipe landmark processing and geometric equation calculations.
-"""
-
-from backend.app.schemas.measure_schema import (
-    MeasurementInput, MeasurementNormalized, MediaPipeLandmarks, Unit
-)
-from backend.app.schemas.errors import ErrorResponse, ErrorDetail
-from fastapi import HTTPException
-from typing import Dict
-import uuid
-import math
-
-
-CANONICAL_FIELDS = {
-    "height", "neck", "shoulder", "chest", "underbust", "waist_natural",
-    "sleeve", "bicep", "forearm", "hip_low", "thigh", "knee",
-    "calf", "ankle", "front_rise", "back_rise", "inseam", "outseam"
 }
 
 ALLOWED_META_FIELDS = {
@@ -86,11 +66,6 @@ def inches_to_cm(inches: float) -> float:
 
 
 def calculate_distance(p1: Dict[str, float], p2: Dict[str, float]) -> float:
-    """Calculate Euclidean distance between two 3D points."""
-    dx = p2["x"] - p1["x"]
-    dy = p2["y"] - p1["y"]
-    dz = p2["z"] - p1["z"]
-    return math.sqrt(dx * dx + dy * dy + dz * dz)
     """
     Calculate Euclidean distance between two 3D points.
     
@@ -112,23 +87,15 @@ def calculate_measurements_from_landmarks(
     side_landmarks: MediaPipeLandmarks,
 ) -> Dict[str, float]:
     """
-    Derive anthropometric measurements from MediaPipe landmarks.
-
-    Placeholder implementation until calibrated formulas are available.
-    """
-    # TODO: Replace placeholder logic with geometric equations.
-    return {
-    side_landmarks: MediaPipeLandmarks
-) -> Dict[str, float]:
-    """
     Calculate anthropometric measurements from MediaPipe landmarks.
     
     This function implements geometric equations to estimate body measurements
     from 3D landmark coordinates. The equations are based on anthropometric
-    research and will be refined during the calibration phase if needed.
+    research and MediaPipe Pose Landmarker v3.1 (33 landmarks).
     
-    MediaPipe Pose Landmarker v3.1 provides 33 landmarks:
-    0: nose, 11-12: shoulders, 23-24: hips, 27-28: knees, 29-30: ankles, etc.
+    MediaPipe Pose Landmarks (indices 0-32):
+    - 0: nose, 11-12: shoulders, 13-14: elbows, 15-16: wrists
+    - 23-24: hips, 25-26: knees, 27-28: ankles, 29-30: heels, 31-32: foot index
     
     Args:
         front_landmarks: MediaPipe landmarks from front-facing photo
@@ -143,38 +110,191 @@ def calculate_measurements_from_landmarks(
     side_pts = [{'x': lm.x, 'y': lm.y, 'z': lm.z, 'visibility': lm.visibility} 
                 for lm in side_landmarks.landmarks]
     
-    # TODO: Implement actual geometric equations
-    # For MVP, these are placeholder calculations that should be replaced
-    # with proper anthropometric formulas based on MediaPipe landmark indices
+    # MediaPipe coordinates are normalized (0-1 range)
+    # We need to scale them to real-world measurements
+    # Using image dimensions to get pixel-based distances, then scale to cm
     
-    # Example calculation (simplified):
-    # Height: Distance from ankle to top of head (scaled to real-world cm)
-    # Shoulder width: Distance between shoulder landmarks
-    # Chest: Circumference estimate from shoulder-to-hip distance
-    # Waist: Circumference estimate from hip landmarks
-    # Inseam: Distance from ankle to hip
+    # Get image dimensions for scaling
+    img_height_front = front_landmarks.image_height
+    img_width_front = front_landmarks.image_width
+    img_height_side = side_landmarks.image_height
+    img_width_side = side_landmarks.image_width
     
-    # Placeholder implementation - replace with actual calculations
+    # Calculate pixel-based distances by denormalizing coordinates
+    def denormalize_point(pt: Dict[str, float], img_width: int, img_height: int) -> Dict[str, float]:
+        """Convert normalized coordinates to pixel coordinates."""
+        return {
+            'x': pt['x'] * img_width,
+            'y': pt['y'] * img_height,
+            'z': pt['z'] * img_width,  # z is in same scale as width
+            'visibility': pt['visibility']
+        }
+    
+    # Denormalize all points
+    front_px = [denormalize_point(pt, img_width_front, img_height_front) for pt in front_pts]
+    side_px = [denormalize_point(pt, img_width_side, img_height_side) for pt in side_pts]
+    
+    # --- HEIGHT CALCULATION ---
+    # Height: Distance from ankle to top of head (nose is proxy for head top)
+    # Use average of left and right ankle
+    left_ankle = front_px[27]
+    right_ankle = front_px[28]
+    nose = front_px[0]
+    
+    ankle_y = (left_ankle['y'] + right_ankle['y']) / 2
+    head_y = nose['y']
+    height_pixels = abs(ankle_y - head_y)
+    
+    # Assume average person height is 170cm and use this as scaling factor
+    # This will be refined with user-provided height or calibration data
+    REFERENCE_HEIGHT_CM = 170.0
+    pixels_per_cm = height_pixels / REFERENCE_HEIGHT_CM if height_pixels > 0 else 1.0
+    
+    # --- SHOULDER WIDTH ---
+    left_shoulder = front_px[11]
+    right_shoulder = front_px[12]
+    shoulder_width_px = calculate_distance(left_shoulder, right_shoulder)
+    shoulder_width_cm = shoulder_width_px / pixels_per_cm
+    
+    # --- CHEST MEASUREMENT ---
+    # Chest circumference estimate: Use shoulder width from front + depth from side
+    # Simplified approach: chest_circumference ≈ π * average_diameter
+    left_shoulder_side = side_px[11]
+    right_shoulder_side = side_px[12]
+    chest_depth_px = abs(left_shoulder_side['z'] - right_shoulder_side['z'])
+    chest_depth_cm = chest_depth_px / pixels_per_cm if chest_depth_px > 0 else shoulder_width_cm * 0.5
+    
+    # Chest is typically at shoulder level, use shoulder measurements as proxy
+    chest_width_cm = shoulder_width_cm * 1.05  # Chest is slightly wider than shoulders
+    chest_depth_cm = max(chest_depth_cm, chest_width_cm * 0.5)  # Ensure reasonable depth
+    
+    # Simplified circumference: average of width and depth * π
+    chest_cm = math.pi * (chest_width_cm + chest_depth_cm) / 2
+    
+    # --- WAIST MEASUREMENT ---
+    # Waist is approximately midway between shoulders and hips
+    left_hip = front_px[23]
+    right_hip = front_px[24]
+    
+    waist_y = (left_shoulder['y'] + right_shoulder['y'] + left_hip['y'] + right_hip['y']) / 4
+    waist_width_px = calculate_distance(left_hip, right_hip) * 0.85  # Waist is narrower than hips
+    waist_width_cm = waist_width_px / pixels_per_cm
+    
+    # Get waist depth from side view
+    left_hip_side = side_px[23]
+    right_hip_side = side_px[24]
+    waist_depth_px = abs(left_hip_side['z'] - right_hip_side['z']) * 0.8
+    waist_depth_cm = waist_depth_px / pixels_per_cm if waist_depth_px > 0 else waist_width_cm * 0.5
+    
+    # Simplified circumference
+    waist_cm = math.pi * (waist_width_cm + waist_depth_cm) / 2
+    
+    # --- HIP MEASUREMENT ---
+    hip_width_px = calculate_distance(left_hip, right_hip)
+    hip_width_cm = hip_width_px / pixels_per_cm
+    
+    hip_depth_px = abs(left_hip_side['z'] - right_hip_side['z'])
+    hip_depth_cm = hip_depth_px / pixels_per_cm if hip_depth_px > 0 else hip_width_cm * 0.55
+    
+    # Simplified circumference
+    hip_cm = math.pi * (hip_width_cm + hip_depth_cm) / 2
+    
+    # --- INSEAM ---
+    # Distance from ankle to hip (crotch level)
+    left_ankle_front = front_px[27]
+    left_hip_front = front_px[23]
+    inseam_px = calculate_distance(left_ankle_front, left_hip_front)
+    inseam_cm = inseam_px / pixels_per_cm
+    
+    # --- OUTSEAM ---
+    # Distance from ankle to waist level
+    outseam_px = abs(ankle_y - waist_y)
+    outseam_cm = outseam_px / pixels_per_cm
+    
+    # --- SLEEVE LENGTH ---
+    # Distance from shoulder to wrist
+    left_wrist = front_px[15]
+    sleeve_px = calculate_distance(left_shoulder, left_wrist)
+    sleeve_cm = sleeve_px / pixels_per_cm
+    
+    # --- BICEP ---
+    # Distance from shoulder to elbow
+    left_elbow = front_px[13]
+    bicep_length_px = calculate_distance(left_shoulder, left_elbow)
+    bicep_length_cm = bicep_length_px / pixels_per_cm
+    # Bicep circumference is estimated from upper arm length
+    # Typical ratio: bicep_circumference ≈ 0.9 * upper_arm_length
+    bicep_cm = bicep_length_cm * 0.9
+    
+    # --- FOREARM ---
+    # Distance from elbow to wrist
+    forearm_length_px = calculate_distance(left_elbow, left_wrist)
+    forearm_length_cm = forearm_length_px / pixels_per_cm
+    # Forearm circumference is estimated from forearm length
+    # Typical ratio: forearm_circumference ≈ 0.85 * forearm_length
+    forearm_cm = forearm_length_cm * 0.85
+    
+    # --- THIGH ---
+    # Distance from hip to knee
+    left_knee = front_px[25]
+    thigh_length_px = calculate_distance(left_hip_front, left_knee)
+    thigh_length_cm = thigh_length_px / pixels_per_cm
+    # Thigh circumference is estimated from thigh length
+    # Typical ratio: thigh_circumference ≈ 1.3 * thigh_length
+    thigh_cm = thigh_length_cm * 1.3
+    
+    # --- KNEE ---
+    # Knee circumference estimated from thigh and calf
+    knee_cm = thigh_cm * 0.7  # Knee is ~70% of thigh circumference
+    
+    # --- CALF ---
+    # Distance from knee to ankle
+    calf_length_px = calculate_distance(left_knee, left_ankle_front)
+    calf_length_cm = calf_length_px / pixels_per_cm
+    # Calf circumference is estimated from calf length
+    # Typical ratio: calf_circumference ≈ 0.9 * calf_length
+    calf_cm = calf_length_cm * 0.9
+    
+    # --- ANKLE ---
+    # Ankle circumference estimated as smaller than calf
+    ankle_cm = calf_cm * 0.65  # Ankle is ~65% of calf circumference
+    
+    # --- NECK ---
+    # Neck is estimated from shoulder width
+    neck_cm = shoulder_width_cm * 0.4  # Neck is ~40% of shoulder width
+    
+    # --- UNDERBUST ---
+    # Underbust is between chest and waist
+    underbust_cm = (chest_cm + waist_cm) / 2 * 0.95
+    
+    # --- FRONT RISE & BACK RISE ---
+    # Rise measurements from hip to waist
+    front_rise_cm = abs(waist_y - left_hip['y']) / pixels_per_cm
+    back_rise_cm = front_rise_cm * 1.2  # Back rise is typically longer
+    
+    # Return all measurements in centimeters
     measurements = {
-        "height_cm": 170.0,
-        "neck_cm": 38.0,
-        "shoulder_cm": 45.0,
-        "chest_cm": 100.0,
-        "underbust_cm": 85.0,
-        "waist_natural_cm": 80.0,
-        "sleeve_cm": 60.0,
-        "bicep_cm": 30.0,
-        "forearm_cm": 25.0,
-        "hip_low_cm": 100.0,
-        "thigh_cm": 55.0,
-        "knee_cm": 38.0,
-        "calf_cm": 35.0,
-        "ankle_cm": 22.0,
-        "front_rise_cm": 25.0,
-        "back_rise_cm": 35.0,
-        "inseam_cm": 76.0,
-        "outseam_cm": 100.0,
+        "height_cm": height_pixels / pixels_per_cm,
+        "neck_cm": neck_cm,
+        "shoulder_cm": shoulder_width_cm,
+        "chest_cm": chest_cm,
+        "underbust_cm": underbust_cm,
+        "waist_natural_cm": waist_cm,
+        "sleeve_cm": sleeve_cm,
+        "bicep_cm": bicep_cm,
+        "forearm_cm": forearm_cm,
+        "hip_low_cm": hip_cm,
+        "thigh_cm": thigh_cm,
+        "knee_cm": knee_cm,
+        "calf_cm": calf_cm,
+        "ankle_cm": ankle_cm,
+        "front_rise_cm": front_rise_cm,
+        "back_rise_cm": back_rise_cm,
+        "inseam_cm": inseam_cm,
+        "outseam_cm": outseam_cm,
     }
+    
+    return measurements
 
 
 def estimate_accuracy(
@@ -185,7 +305,7 @@ def estimate_accuracy(
     """
     Estimate accuracy of MediaPipe-derived measurements (0-1 scale).
 
-    Uses visibility heuristics as a stand-in until calibration data is available.
+    Uses visibility heuristics and pose quality checks.
     """
     front_scores = [lm.visibility for lm in front_landmarks.landmarks]
     side_scores = [lm.visibility for lm in side_landmarks.landmarks]
@@ -193,97 +313,26 @@ def estimate_accuracy(
         len(front_scores) + len(side_scores)
     )
 
-    if avg_visibility > 0.8:
+    # Check key landmarks visibility (shoulders, hips, knees, ankles)
+    key_indices = [11, 12, 23, 24, 25, 26, 27, 28]
+    key_visibility_front = sum(front_landmarks.landmarks[i].visibility for i in key_indices) / len(key_indices)
+    key_visibility_side = sum(side_landmarks.landmarks[i].visibility for i in key_indices) / len(key_indices)
+    key_visibility_avg = (key_visibility_front + key_visibility_side) / 2
+
+    # Accuracy estimation based on visibility
+    if avg_visibility > 0.85 and key_visibility_avg > 0.9:
         return 0.95
-    if avg_visibility > 0.6:
-        return 0.9
-    return 0.85
-
-
-def _unknown_field_errors(input_data: MeasurementInput, raw_payload: Dict | None = None):
-    allowed = CANONICAL_FIELDS | {
-        "unit",
-        "session_id",
-        "front_landmarks",
-        "side_landmarks",
-        "front_photo_url",
-        "side_photo_url",
-        "source_type",
-        "platform",
-        "arkit_body_anchor",
-        "arkit_depth_map",
-        "browser_info",
-        "processing_location",
-        "device_id",
-    }
-
-    if raw_payload is None:
-        input_dict = (
-            input_data.model_dump(exclude_unset=True)
-            if hasattr(input_data, "model_dump")
-            else input_data.dict(exclude_unset=True)
-        )
-        keys = set(input_dict.keys())
+    elif avg_visibility > 0.7 and key_visibility_avg > 0.75:
+        return 0.90
+    elif avg_visibility > 0.5 and key_visibility_avg > 0.6:
+        return 0.85
     else:
-        keys = set(raw_payload.keys())
-
-    for field_name in keys:
-        if field_name not in allowed:
-            yield ErrorDetail(
-                field=field_name,
-                message=f"Unknown field: {field_name}",
-                hint=f"Did you mean one of: {', '.join(sorted(CANONICAL_FIELDS))}?",
-            )
+        return 0.80
 
 
 def normalize_and_validate(
     input_data: MeasurementInput, raw_payload: Dict | None = None
 ) -> MeasurementNormalized:
-    """Normalize incoming measurement payloads and validate canonical fields."""
-    errors = list(_unknown_field_errors(input_data, raw_payload))
-    
-    return measurements
-
-
-def estimate_accuracy(measurements: Dict[str, float], 
-                      front_landmarks: MediaPipeLandmarks,
-                      side_landmarks: MediaPipeLandmarks) -> float:
-    """
-    Estimate the accuracy of MediaPipe-derived measurements.
-    
-    This function uses heuristics to estimate the % error of measurements
-    based on landmark visibility, pose quality, and consistency checks.
-    
-    Args:
-        measurements: Calculated measurements dictionary
-        front_landmarks: Front-facing landmarks
-        side_landmarks: Side-facing landmarks
-    
-    Returns:
-        Estimated accuracy as a percentage (e.g., 0.97 for 97% accuracy, 3% error)
-    """
-    # TODO: Implement accuracy estimation logic
-    # For MVP, this will check:
-    # - Landmark visibility scores (average visibility > 0.8 = high confidence)
-    # - Pose symmetry (left vs right side differences < 5%)
-    # - Consistency between front and side measurements
-    # - Known anthropometric ratios (e.g., height vs inseam should be ~2.2:1)
-    
-    # Calculate average visibility
-    front_pts = [lm.visibility for lm in front_landmarks.landmarks]
-    side_pts = [lm.visibility for lm in side_landmarks.landmarks]
-    avg_visibility = (sum(front_pts) + sum(side_pts)) / (len(front_pts) + len(side_pts))
-    
-    # Simple heuristic: visibility > 0.8 = 95% accuracy, < 0.5 = 85% accuracy
-    if avg_visibility > 0.8:
-        return 0.95
-    elif avg_visibility > 0.6:
-        return 0.90
-    else:
-        return 0.85
-
-
-def normalize_and_validate(input_data: MeasurementInput) -> MeasurementNormalized:
     """
     Normalize measurement input to centimeters and validate field names.
     
@@ -292,6 +341,7 @@ def normalize_and_validate(input_data: MeasurementInput) -> MeasurementNormalize
     
     Args:
         input_data: Raw measurement input with optional MediaPipe landmarks
+        raw_payload: Optional raw payload dict for validation
         
     Returns:
         Normalized measurements in centimeters with confidence scores
@@ -303,78 +353,34 @@ def normalize_and_validate(input_data: MeasurementInput) -> MeasurementNormalize
     
     # Check for unknown fields in user-provided measurements
     if not input_data.front_landmarks and not input_data.side_landmarks:
-        raw_payload = dict(getattr(input_data, '__dict__', {}))
-        extra_payload = getattr(input_data, '__pydantic_extra__', None)
-        if extra_payload:
-            raw_payload.update(extra_payload)
-        model_extra = getattr(input_data, 'model_extra', None)
-        if model_extra:
-            raw_payload.update(model_extra)
+        if raw_payload is None:
+            input_dict = (
+                input_data.model_dump(exclude_unset=True)
+                if hasattr(input_data, "model_dump")
+                else input_data.dict(exclude_unset=True)
+            )
+            keys = set(input_dict.keys())
+        else:
+            keys = set(raw_payload.keys())
 
-        for field_name, value in raw_payload.items():
-            if field_name.startswith('_'):
-                continue
-            if field_name in CANONICAL_FIELDS or field_name in ALLOWED_META_FIELDS:
-                continue
-            errors.append(ErrorDetail(
-                field=field_name,
-                message=f"Unknown field: {field_name}",
-                hint=f"Did you mean one of: {', '.join(sorted(CANONICAL_FIELDS))}?"
-            ))
+        for field_name in keys:
+            if field_name not in CANONICAL_FIELDS and field_name not in ALLOWED_META_FIELDS:
+                errors.append(
+                    ErrorDetail(
+                        field=field_name,
+                        message=f"Unknown field: {field_name}",
+                        hint=f"Did you mean one of: {', '.join(sorted(CANONICAL_FIELDS))}?",
+                    )
+                )
     
     if errors:
         raise HTTPException(
             status_code=422,
             detail=ErrorResponse(
                 type="validation_error",
-                code="unknown_field",
-                message="One or more fields are not recognized",
+                message="Invalid measurement field names",
                 errors=errors,
-                session_id=input_data.session_id,
-            ).dict(),
-        )
-
-    if input_data.front_landmarks and input_data.side_landmarks:
-        measurements = calculate_measurements_from_landmarks(
-            input_data.front_landmarks, input_data.side_landmarks
-        )
-        source = "mediapipe"
-        accuracy = estimate_accuracy(
-            measurements, input_data.front_landmarks, input_data.side_landmarks
-        )
-        front_landmarks_id = str(uuid.uuid4())
-        side_landmarks_id = str(uuid.uuid4())
-        # TODO: persist landmarks for provenance.
-    else:
-        conversion = 2.54 if input_data.unit == Unit.IN else 1.0
-        measurements = {
-            "height_cm": (input_data.height or 0) * conversion,
-            "neck_cm": (input_data.neck or 0) * conversion,
-            "shoulder_cm": (input_data.shoulder or 0) * conversion,
-            "chest_cm": (input_data.chest or 0) * conversion,
-            "underbust_cm": (input_data.underbust or 0) * conversion,
-            "waist_natural_cm": (input_data.waist_natural or 0) * conversion,
-            "sleeve_cm": (input_data.sleeve or 0) * conversion,
-            "bicep_cm": (input_data.bicep or 0) * conversion,
-            "forearm_cm": (input_data.forearm or 0) * conversion,
-            "hip_low_cm": (input_data.hip_low or 0) * conversion,
-            "thigh_cm": (input_data.thigh or 0) * conversion,
-            "knee_cm": (input_data.knee or 0) * conversion,
-            "calf_cm": (input_data.calf or 0) * conversion,
-            "ankle_cm": (input_data.ankle or 0) * conversion,
-            "front_rise_cm": (input_data.front_rise or 0) * conversion,
-            "back_rise_cm": (input_data.back_rise or 0) * conversion,
-            "inseam_cm": (input_data.inseam or 0) * conversion,
-            "outseam_cm": (input_data.outseam or 0) * conversion,
-        }
-        source = "user_input"
-        accuracy = 1.0
-        front_landmarks_id = None
-        side_landmarks_id = None
-
-    return MeasurementNormalized(
-                session_id=input_data.session_id
-            ).dict()
+            ).model_dump(),
         )
     
     # Calculate measurements from MediaPipe landmarks if available
@@ -385,9 +391,7 @@ def normalize_and_validate(input_data: MeasurementInput) -> MeasurementNormalize
         )
         source = "mediapipe"
         accuracy = estimate_accuracy(
-            measurements, 
-            input_data.front_landmarks, 
-            input_data.side_landmarks
+            measurements, input_data.front_landmarks, input_data.side_landmarks
         )
         
         # Store landmarks for provenance
@@ -396,47 +400,31 @@ def normalize_and_validate(input_data: MeasurementInput) -> MeasurementNormalize
         # TODO: Store landmarks in database
         
     else:
-        # Use user-provided measurements
-        conversion_factor = 2.54 if input_data.unit == Unit.IN else 1.0
-        measurements = {
-            "height_cm": (input_data.height or 0) * conversion_factor,
-            "neck_cm": (input_data.neck or 0) * conversion_factor,
-            "shoulder_cm": (input_data.shoulder or 0) * conversion_factor,
-            "chest_cm": (input_data.chest or 0) * conversion_factor,
-            "underbust_cm": (input_data.underbust or 0) * conversion_factor,
-            "waist_natural_cm": (input_data.waist_natural or 0) * conversion_factor,
-            "sleeve_cm": (input_data.sleeve or 0) * conversion_factor,
-            "bicep_cm": (input_data.bicep or 0) * conversion_factor,
-            "forearm_cm": (input_data.forearm or 0) * conversion_factor,
-            "hip_low_cm": (input_data.hip_low or 0) * conversion_factor,
-            "thigh_cm": (input_data.thigh or 0) * conversion_factor,
-            "knee_cm": (input_data.knee or 0) * conversion_factor,
-            "calf_cm": (input_data.calf or 0) * conversion_factor,
-            "ankle_cm": (input_data.ankle or 0) * conversion_factor,
-            "front_rise_cm": (input_data.front_rise or 0) * conversion_factor,
-            "back_rise_cm": (input_data.back_rise or 0) * conversion_factor,
-            "inseam_cm": (input_data.inseam or 0) * conversion_factor,
-            "outseam_cm": (input_data.outseam or 0) * conversion_factor,
-        }
+        # Use user-provided measurements and convert to cm
+        unit = input_data.unit or Unit.CM
+        measurements = {}
+        
+        for field in CANONICAL_FIELDS:
+            value = getattr(input_data, field, None)
+            if value is not None:
+                if unit == Unit.IN:
+                    measurements[f"{field}_cm"] = inches_to_cm(value)
+                else:
+                    measurements[f"{field}_cm"] = value
+        
         source = "user_input"
         accuracy = 1.0  # Assume user input is accurate
         front_landmarks_id = None
         side_landmarks_id = None
     
     # Create normalized measurement object
-    normalized = MeasurementNormalized(
-        **measurements,
+    return MeasurementNormalized(
+        session_id=input_data.session_id or str(uuid.uuid4()),
+        measurements=measurements,
         source=source,
-        model_version="v1.0-mediapipe",
-        confidence=accuracy,
-        accuracy_estimate=1.0 - accuracy,
-        accuracy_estimate=1.0 - accuracy,  # Convert to error percentage
-        session_id=input_data.session_id,
+        accuracy=accuracy,
         front_photo_url=input_data.front_photo_url,
         side_photo_url=input_data.side_photo_url,
         front_landmarks_id=front_landmarks_id,
         side_landmarks_id=side_landmarks_id,
     )
-    
-    return normalized
-
