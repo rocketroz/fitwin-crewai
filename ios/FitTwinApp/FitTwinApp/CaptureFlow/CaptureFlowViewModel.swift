@@ -6,19 +6,34 @@ final class CaptureFlowViewModel: ObservableObject {
     @Published var alertMessage: String?
     @Published private(set) var frontCapture: CapturedPhoto?
     @Published private(set) var sideCapture: CapturedPhoto?
+    @Published private(set) var requiresManualFallback = false
 
-    let sessionController = LiDARSessionController()
+    let sessionController = CameraSessionController()
 
     private let permissionManager = CameraPermissionManager()
+    private let deviceRequirement = DeviceRequirementChecker()
     private let measurementCalculator = LiDARMeasurementCalculator()
     private let apiClient = FitTwinAPI()
     private let frontCountdownStart = 10
     private let sideCountdownStart = 5
     private let sessionID = UUID().uuidString
 
+    var manualFallbackInstructions: String {
+        deviceRequirement.manualFallbackInstructions
+    }
+
     func startFlow() {
         Task {
             state = .requestingPermissions
+            requiresManualFallback = false
+
+            guard deviceRequirement.isFrontCameraCaptureSupported else {
+                requiresManualFallback = true
+                state = .error(deviceRequirement.unsupportedMessage)
+                alertMessage = deviceRequirement.unsupportedMessage
+                return
+            }
+
             let status = await permissionManager.requestAccess()
 
             switch status {
@@ -26,10 +41,12 @@ final class CaptureFlowViewModel: ObservableObject {
                 sessionController.start()
                 state = .readyForFront
             case .denied, .restricted:
+                requiresManualFallback = false
                 let message = "Camera access is required to capture measurements. Update permissions in Settings."
                 state = .error(message)
                 alertMessage = message
             case .notDetermined:
+                requiresManualFallback = false
                 let message = "Camera permission not determined. Please try again."
                 state = .error(message)
                 alertMessage = message
@@ -94,6 +111,7 @@ final class CaptureFlowViewModel: ObservableObject {
         alertMessage = nil
         frontCapture = nil
         sideCapture = nil
+        requiresManualFallback = false
         sessionController.reset()
     }
 
@@ -116,7 +134,7 @@ final class CaptureFlowViewModel: ObservableObject {
     private func performFrontCapture() async {
         state = .capturingFront
         do {
-            let capture = try sessionController.captureCurrentFrame()
+            let capture = try await sessionController.captureCurrentFrame()
             state = .reviewFront(capture)
         } catch {
             state = .error(error.localizedDescription)
@@ -127,7 +145,7 @@ final class CaptureFlowViewModel: ObservableObject {
     private func performSideCapture() async {
         state = .capturingSide
         do {
-            let capture = try sessionController.captureCurrentFrame()
+            let capture = try await sessionController.captureCurrentFrame()
             state = .reviewSide(capture)
         } catch {
             state = .error(error.localizedDescription)

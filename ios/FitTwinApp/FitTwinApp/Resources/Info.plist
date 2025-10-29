@@ -18,12 +18,14 @@
 	<string>1.0</string>
 	<key>CFBundleVersion</key>
 	<string>1</string>
-	<key>LSRequiresIPhoneOS</key>
-	<true/>
-	<key>FITWIN_API_URL</key>
-	<string>http://127.0.0.1:8000</string>
 	<key>FITWIN_API_KEY</key>
 	<string>staging-secret-key</string>
+	<key>FITWIN_API_URL</key>
+	<string>https://fitwin-dev.ngrok-free.app</string>
+	<key>FITWIN_ENV</key>
+	<string>dev</string>
+	<key>LSRequiresIPhoneOS</key>
+	<true/>
 	<key>NSCameraUsageDescription</key>
 	<string>FitTwin needs access to the camera to capture measurement photos.</string>
 	<key>NSMicrophoneUsageDescription</key>
