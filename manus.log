@@ -27,7 +27,13 @@ FitTwin Manus fork captured richer measurement provenance, UI reference imagery,
 4. **Assets**
    - Screenshot archive retained locally for UI/UX review; defer commit decision until binary asset policy confirmed.
 
+## 2025-11-03 Updates
+- Resolved duplicated Manus snippets across backend measurement routers, schemas, and error envelopes while preserving legacy context blocks for future diffs.
+- Rebuilt CrewAI measurement tools and test harness with a single retry/circuit-breaker implementation; ensured timeout, rate-limit, and server-error paths remain covered.
+- Validated DMaaS endpoints via `scripts/test_all.sh` (backend: 11, agents: 9) and confirmed green suite before committing `chore(repo): reconcile merge cleanup` to `origin/main`.
+
 ## Follow-Ups
 - Decide whether to version control the screenshot set or move to design storage.
 - Re-run Supabase migrations in shared staging environment to ensure provenance changes deploy cleanly.
 - Evaluate need for additional Manus-provided tests before production cut.
+- Address Pydantic `protected_namespaces` warning for the `model_version` field to keep analysis output clean.

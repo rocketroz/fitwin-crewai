@@ -130,11 +130,12 @@ class MeasurementInput(BaseModel):
         return value
 
     if ConfigDict:  # pragma: no branch - executed depending on pydantic version
-        model_config = ConfigDict(extra="allow")
+        model_config = ConfigDict(extra="allow", protected_namespaces=())
     else:
 
         class Config:  # type: ignore
             extra = "allow"
+            protected_namespaces = ()
 
 
 class MeasurementNormalized(BaseModel):
@@ -174,9 +175,10 @@ class MeasurementNormalized(BaseModel):
     side_landmarks_id: Optional[str] = None
 
     if ConfigDict:  # pragma: no branch - executed depending on pydantic version
-        model_config = ConfigDict(extra="allow")
+        model_config = ConfigDict(extra="allow", protected_namespaces=())
     else:
 
         class Config:  # type: ignore
             extra = "allow"
+            protected_namespaces = ()
 

@@ -13,3 +13,7 @@
 [2025-10-28 13:22:55] VERIFY :: Confirmed `git status` shows expected touchpoints; screenshots noted as auxiliary assets pending commit decision.
 [2025-10-28 18:44:10] DOCS   :: Logged merge steps in `CHANGELOG.md` (Version 2.1) covering documentation, database, and asset updates.
 [2025-10-29 08:01:39] REVIEW :: Final sanity check on README/PR template alignment with FastAPI DMaaS endpoints and API key workflow.
+[2025-11-03 09:48:17] AUDIT  :: Investigated pytest collection failures; traced duplicate Manus merge blocks in backend routers and agent tools.
+[2025-11-03 10:21:05] FIX    :: Reconciled measurement schemas, error envelopes, and measurement routers; restored agent tool logic to single-source implementation.
+[2025-11-03 10:54:33] TEST   :: Ran `scripts/test_all.sh`; backend (11) and agent (9) suites now passing after cleanup.
+[2025-11-03 11:10:02] COMMIT :: Recorded `chore(repo): reconcile merge cleanup` and pushed to `origin/main`; left `screenshots/` untracked pending asset policy.
