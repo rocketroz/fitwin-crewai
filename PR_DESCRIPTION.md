@@ -29,8 +29,8 @@ from src.server.models import MeasurementsResponse
 
 # After
 from backend.app.main import app
-from backend.app.routers.measurement_job import router
-from backend.app.schemas.models import MeasurementsResponse
+from backend.app.routers.measurements import router
+from backend.app.schemas.measure_schema import MeasurementNormalized
 ```
 
 ### New Files
@@ -66,9 +66,9 @@ tests/backend/test_measure_and_recs.py ..                                [100%]
 ```
 
 ### API Verification
-Both endpoints tested and working:
-- ✅ `/measurements/` - Returns normalized body measurements
-- ✅ `/dmaas/latest` - Returns measurements + size recommendations
+Key endpoints validated:
+- ✅ `POST /measurements/validate` — Normalizes measurements and MediaPipe landmarks
+- ✅ `POST /measurements/recommend` — Returns size recommendation payload
 
 ### Manual Testing
 ```bash
@@ -76,8 +76,15 @@ Both endpoints tested and working:
 bash scripts/dev_server.sh
 
 # Test endpoints
-curl -s http://127.0.0.1:8000/measurements/ | python -m json.tool
-curl -s http://127.0.0.1:8000/dmaas/latest | python -m json.tool
+curl -s -X POST http://127.0.0.1:8000/measurements/validate \
+  -H "Content-Type: application/json" \
+  -H "X-API-Key: staging-secret-key" \
+  -d '{"waist_natural": 32, "unit": "in"}' | python -m json.tool
+
+curl -s -X POST http://127.0.0.1:8000/measurements/recommend \
+  -H "Content-Type: application/json" \
+  -H "X-API-Key: staging-secret-key" \
+  -d '{"height_cm": 170, "chest_cm": 100, "waist_natural_cm": 80, "source": "mediapipe"}' | python -m json.tool
 ```
 
 ## Migration Statistics

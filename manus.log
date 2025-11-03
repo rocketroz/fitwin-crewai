@@ -1,0 +1,33 @@
+# Manus Integration Chronicle
+# Generated: 2025-11-02
+
+## Context
+FitTwin Manus fork captured richer measurement provenance, UI reference imagery, and Supabase schema refinements. This log tracks what was retained, what was adapted, and any open follow-ups after reconciling the repositories.
+
+## Highlights
+- Preserved Manus documentation set (`docs/spec/*`, `FITWIN_MONOREPO_OPS.md`) to anchor DMaaS onboarding.
+- Retained legacy vendor calibration tables while incorporating Manus normalized payload storage.
+- Documented the rationale for storing capture imagery URLs alongside session metadata.
+- Catalogued Manus screenshot library for reference (not yet committed; stored under `screenshots/`).
+
+## Detailed Notes
+1. **Supabase Provenance**
+   - Manus schema introduced `normalized_measurements` for JSON payload archival; merged into primary migration with service-role RLS mirroring.
+   - `front_photo_url` and `side_photo_url` added to `measurement_sessions` to honor Manus capture pipeline requirements.
+   - Verified no downstream code expects `session_id` UUID (string type preserved for agents).
+
+2. **Agents & Tooling**
+   - Manus guidance on CrewAI secrets was merged into `agents/README.md`, including `.venv-agents` usage and GitHub Actions smoke-job context.
+   - Helper script `scripts/run_agents_env.sh` validated against Manus expectations; no further edits required.
+
+3. **Documentation Alignment**
+   - Manus README copy emphasized DMaaS endpoints and API key headers; consolidated with existing repository quick start.
+   - PR template now references measurement routers instead of deprecated job endpoints.
+
+4. **Assets**
+   - Screenshot archive retained locally for UI/UX review; defer commit decision until binary asset policy confirmed.
+
+## Follow-Ups
+- Decide whether to version control the screenshot set or move to design storage.
+- Re-run Supabase migrations in shared staging environment to ensure provenance changes deploy cleanly.
+- Evaluate need for additional Manus-provided tests before production cut.

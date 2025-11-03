@@ -2,7 +2,7 @@
 
 **Author:** Laura Tornga (@rocketroz)
 
-A comprehensive monorepo for the FitTwin project, including backend API, CrewAI agents, frontend components, and data management. The backend provides two-photo measurement mapping for upper and lower body with normalized body measurement schema and size recommendations.
+Unified workspace for the FitTwin MediaPipe MVP: FastAPI backend, CrewAI agents, Supabase migrations, and both the current capture stub and the legacy Manus web app. The backend now exposes the DMaaS `/measurements/validate` and `/measurements/recommend` endpoints described in the FitTwin spec (see `docs/spec`).
 
 ## Project Structure
 
@@ -27,7 +27,8 @@ fitwin-crewai/
 │   ├── runbooks/       # Operational guides
 │   └── PAUSE_RESUME_GUIDE.md
 ├── frontend/           # Frontend application
-│   └── src/
+│   ├── src/            # Current capture stub
+│   └── legacy_web_app/ # Manus Vite/React implementation package
 ├── scripts/            # Utility scripts
 ├── tests/              # Test suites
 │   ├── backend/        # Backend tests
@@ -36,6 +37,8 @@ fitwin-crewai/
 ```
 
 ## Quick Start
+
+See `AGENTS.md` for contributor guidelines, coding conventions, and PR expectations that apply across the monorepo.
 
 ### 1. Setup
 
@@ -68,7 +71,7 @@ pip install -r requirements-dev.txt
 bash scripts/test_all.sh
 ```
 
-Note: `requirements-dev.txt` pins `httpx==0.23.3`, `pydantic==1.10.24`, and other dev/test packages used to verify CI locally. If you use other tools that require newer versions (for example `crewai`, `chromadb`, or `mcp`), create a separate venv for those workflows to avoid conflicts.
+Note: `requirements-dev.txt` pins the FastAPI/Pydantic 2 stack used by CI (currently `fastapi==0.115.0`, `pydantic==2.9.2`, `httpx==0.27.2`) along with linting tools. If you need a different toolchain (for example experimental CrewAI releases), create a separate virtual environment to avoid dependency conflicts.
 
 ### 2. Configuration
 
@@ -112,21 +115,38 @@ bash scripts/run_agents.sh
 
 ## API Endpoints
 
-### Measurements Endpoint
+All measurement routes require an `X-API-Key` header (default: `staging-secret-key`).
+
+### Validate measurements
 
 ```bash
-curl -s http://127.0.0.1:8000/measurements/ | python -m json.tool
+curl -s -X POST \
+    http://127.0.0.1:8000/measurements/validate \
+    -H "Content-Type: application/json" \
+    -H "X-API-Key: staging-secret-key" \
+    -d '{"waist_natural": 32, "hip_low": 40, "unit": "in", "session_id": "readme-demo"}' \
+    | python -m json.tool
 ```
 
-Returns normalized body measurements from the vendor API.
+Returns normalized centimeter measurements, a confidence score, and provenance IDs. When landmarks are provided, the placeholder MediaPipe calculation scaffold runs until production geometry equations are wired in.
 
-### DMaaS (Digital Measurement as a Service) Endpoint
+### Recommend sizes
 
 ```bash
-curl -s http://127.0.0.1:8000/dmaas/latest | python -m json.tool
+curl -s -X POST \
+    http://127.0.0.1:8000/measurements/recommend \
+    -H "Content-Type: application/json" \
+    -H "X-API-Key: staging-secret-key" \
+    -d '{"waist_natural_cm": 81.28, "hip_low_cm": 101.6, "chest_cm": 101.6, "model_version": "v1.0-mediapipe"}' \
+    | python -m json.tool
 ```
 
-Returns measurements plus size recommendations for tops and bottoms.
+Returns stubbed recommendations (tops + bottoms) alongside the processed measurement payload. Replace the placeholder logic in `backend/app/routers/measurements.py` and the fit-rule services as real sizing charts become available.
+
+### Health probes
+
+- `GET /` — Lightweight readiness message with docs pointer.
+- `GET /health` — Basic health status payload (extend with database checks as needed).
 
 ## Environment Variables
 
@@ -204,6 +224,7 @@ Additional documentation is available in the `docs/` directory:
 
 - [Pause/Resume Guide](docs/PAUSE_RESUME_GUIDE.md) - Guide for pausing and resuming work
 - [Legacy README](docs/README_legacy.md) - Original project documentation
+- [`docs/spec`](docs/spec) - Manus spec kit, including deployment guide, environment template, and the PDF reference (`speckit_v2.pdf`)
 
 ## Contributing
 
