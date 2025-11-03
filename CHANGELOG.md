@@ -1,5 +1,22 @@
 # FitTwin Three-Mode Platform - Changelog
 
+## Version 2.1 - November 2, 2025
+
+### 📚 Documentation
+- Refreshed the root `README.md` to highlight the DMaaS `validate`/`recommend` workflow, repeatable dev-environment setup, and Curl snippets that match the current API contract.
+- Expanded `PR_DESCRIPTION.md` so migrations reference the new measurement endpoints and the manual test plan exercises API-key–guarded requests.
+- Hardened `agents/README.md` with secret-rotation guidance, a dedicated `.venv-agents` workflow, and troubleshooting notes for the CrewAI smoke job.
+- Prefaced `data/supabase/README.md` with a concise Supabase quick-start checklist while retaining the step-by-step deployment playbook.
+
+### 🗄️ Database & Provenance
+- Added `front_photo_url` and `side_photo_url` provenance columns to `measurement_sessions` for richer capture traceability.
+- Introduced a `normalized_measurements` table with payload storage, confidence metadata, indexes, and matching RLS/service-role policies.
+- Ensured the provenance migration keeps legacy vendor calibration tables while layering in the new Manus schema additions.
+
+### 📸 Assets & Tooling
+- Documented the `screenshots/` reference library that captures the Manus experience for design and QA alignment.
+- Tracked repository-level `codex.log` and `manus.log` symlinks pointing to the consolidated merge workspace for auditability.
+
 ## Version 2.0 - October 27, 2025
 
 ### 🎉 Major Features

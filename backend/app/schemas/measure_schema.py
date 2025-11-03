@@ -1,4 +1,12 @@
+"""Measurement schemas for validation and normalization.
+
+The additional legacy synopsis is kept intact below so that future merges with
+the Manus repository stay low-noise.
 """
+
+from __future__ import annotations
+
+LEGACY_NOTES = """
 Measurement schemas for input validation and normalization.
 
 This module defines the canonical measurement names, unit enum, and schemas
@@ -8,35 +16,12 @@ for input, MediaPipe landmarks, and normalized output.
 from enum import Enum
 from typing import List, Optional
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 try:  # Pydantic v2 support
-    from pydantic import ConfigDict, field_validator  # type: ignore
+    from pydantic import ConfigDict  # type: ignore
 except ImportError:  # pragma: no cover - pydantic v1 fallback
-    ConfigDict = None  # type: ignore[assignment]
-    field_validator = None  # type: ignore[assignment]
-
-try:  # Pydantic v1 support
-    from pydantic import validator  # type: ignore
-except ImportError:  # pragma: no cover - pydantic v2 path
-    validator = None  # type: ignore[assignment]
-
-
-_SKIP_VALIDATION_FIELDS = {
-    "unit",
-    "session_id",
-    "front_landmarks",
-    "side_landmarks",
-    "front_photo_url",
-    "side_photo_url",
-    "browser_info",
-    "processing_location",
-    "arkit_body_anchor",
-    "arkit_depth_map",
-    "device_id",
-    "source_type",
-    "platform",
-}
+    ConfigDict = None
 
 
 class Unit(str, Enum):
@@ -65,13 +50,13 @@ class MediaPipeLandmarks(BaseModel):
 
 
 class MeasurementInput(BaseModel):
-    """Input schema for measurements with flexible units and MediaPipe data from all platforms."""
+    """Input schema for measurements with flexible units and MediaPipe data."""
 
-    # Platform identification
-    source_type: str = "mediapipe_web"  # "arkit_lidar", "mediapipe_native", "mediapipe_web", "user_input"
-    platform: str = "web_mobile"  # "ios", "android", "web_mobile", "web_desktop"
+    # Platform identification metadata
+    source_type: str = "mediapipe_web"
+    platform: str = "web_mobile"
 
-    # ARKit LiDAR data (iOS native only)
+    # Optional ARKit LiDAR data (iOS native)
     arkit_body_anchor: Optional[dict] = None
     arkit_depth_map: Optional[str] = None
 
@@ -105,90 +90,58 @@ class MeasurementInput(BaseModel):
 
     # Web-specific metadata
     browser_info: Optional[dict] = None
-    processing_location: Optional[str] = None  # "client", "server"
+    processing_location: Optional[str] = None
 
-    # Photo URLs (for storage and future model training)
+    # Photo URLs for provenance
     front_photo_url: Optional[str] = None
     side_photo_url: Optional[str] = None
 
     # Device metadata
     device_id: Optional[str] = None
 
-    if ConfigDict:  # pragma: no branch - depends on pydantic version
-        model_config = ConfigDict(extra="allow")
-    else:  # pragma: no cover - exercised under pydantic v1
+    @field_validator(
+        "height",
+        "neck",
+        "shoulder",
+        "chest",
+        "underbust",
+        "waist_natural",
+        "sleeve",
+        "bicep",
+        "forearm",
+        "hip_low",
+        "thigh",
+        "knee",
+        "calf",
+        "ankle",
+        "front_rise",
+        "back_rise",
+        "inseam",
+        "outseam",
+        mode="before",
+    )
+    def _ensure_positive(cls, value):
+        """Ensure numeric measurements are positive when provided."""
+
+        if value is None:
+            return value
+        if isinstance(value, (int, float)) and value <= 0:
+            raise ValueError("measurements must be positive values")
+        return value
+
+    if ConfigDict:  # pragma: no branch - executed depending on pydantic version
+        model_config = ConfigDict(extra="allow", protected_namespaces=())
+    else:
+
         class Config:  # type: ignore
             extra = "allow"
-
-    if field_validator:
-
-        @field_validator("*", mode="before")  # type: ignore[misc]
-        def check_positive(cls, value, info):  # pragma: no cover - simple guard
-            """Validate that numeric measurements are positive."""
-            field_name = info.field_name
-            if field_name in _SKIP_VALIDATION_FIELDS:
-                return value
-            if value is not None and isinstance(value, (int, float)) and value <= 0:
-                raise ValueError(f"{field_name} must be positive")
-            return value
-
-    elif validator:
-
-        @validator("*", pre=True)  # type: ignore[misc]
-        def check_positive(cls, value, field):  # pragma: no cover - simple guard
-            """Validate that numeric measurements are positive."""
-            if field.name in _SKIP_VALIDATION_FIELDS:
-                return value
-            if value is not None and isinstance(value, (int, float)) and value <= 0:
-                raise ValueError(f"{field.name} must be positive")
-            return value
+            protected_namespaces = ()
 
 
 class MeasurementNormalized(BaseModel):
-    """Normalized measurement schema (all in cm) with confidence scores."""
+    """Normalized measurement schema (all values in centimeters)."""
 
-    height_cm: float
-    neck_cm: float
-    shoulder_cm: float
-    chest_cm: float
-    underbust_cm: float
-    waist_natural_cm: float
-    sleeve_cm: float
-    bicep_cm: float
-    forearm_cm: float
-    hip_low_cm: float
-    thigh_cm: float
-    knee_cm: float
-    calf_cm: float
-    ankle_cm: float
-    front_rise_cm: float
-    back_rise_cm: float
-    inseam_cm: float
-    outseam_cm: float
-
-    # Metadata
-    source: str = "mediapipe"  # "mediapipe", "user_input", "vendor_api"
-    model_version: str = "v1.0-mediapipe"
-    confidence: float = Field(ge=0, le=1, default=1.0)
-    accuracy_estimate: Optional[float] = None  # Estimated % error
-    session_id: Optional[str] = None
-
-    # Provenance
-    front_photo_url: Optional[str] = None
-    side_photo_url: Optional[str] = None
-    front_landmarks_id: Optional[str] = None  # Reference to stored landmarks
-    side_landmarks_id: Optional[str] = None
-
-    if ConfigDict:  # pragma: no branch - depends on pydantic version
-        model_config = ConfigDict(extra="allow")
-    else:  # pragma: no cover - exercised under pydantic v1
-        class Config:  # type: ignore
-            extra = "allow"
-
-
-class BodyMeasurements(BaseModel):
-    """Normalized vendor measurements with optional fields and helper utilities."""
-
+    # Measurement values
     height_cm: Optional[float] = None
     neck_cm: Optional[float] = None
     shoulder_cm: Optional[float] = None
@@ -207,16 +160,25 @@ class BodyMeasurements(BaseModel):
     back_rise_cm: Optional[float] = None
     inseam_cm: Optional[float] = None
     outseam_cm: Optional[float] = None
-    source: str = "vendor"
-    vendor_version: Optional[str] = None
-    confidence: Optional[float] = None
 
-    if ConfigDict:  # pragma: no branch - depends on pydantic version
-        model_config = ConfigDict(extra="ignore")
-    else:  # pragma: no cover - exercised under pydantic v1
+    # Metadata
+    source: str = "mediapipe"
+    model_version: str = "v1.0-mediapipe"
+    confidence: float = Field(ge=0, le=1, default=1.0)
+    accuracy_estimate: Optional[float] = None
+    session_id: Optional[str] = None
+
+    # Provenance
+    front_photo_url: Optional[str] = None
+    side_photo_url: Optional[str] = None
+    front_landmarks_id: Optional[str] = None
+    side_landmarks_id: Optional[str] = None
+
+    if ConfigDict:  # pragma: no branch - executed depending on pydantic version
+        model_config = ConfigDict(extra="allow", protected_namespaces=())
+    else:
+
         class Config:  # type: ignore
-            extra = "ignore"
+            extra = "allow"
+            protected_namespaces = ()
 
-    def as_dict(self) -> dict:
-        """Return a dict representation while dropping unset values."""
-        return self.dict(exclude_none=True)

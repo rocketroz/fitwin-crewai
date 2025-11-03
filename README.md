@@ -35,13 +35,12 @@ fitwin-crewai/
 │   ├── backend/           # Backend / FastAPI tests (validate + recommend flows)
 │   └── agents/            # CrewAI tool tests with mocks
 └── CHANGELOG.md
-```
 
 ## Quick Start
 
-See `AGENTS.md` for contributor guidelines, coding conventions, and PR expectations.
+See `AGENTS.md` for contributor guidelines, coding conventions, and PR expectations that apply across the monorepo.
 
-### 1. Environment
+### 1. Setup
 
 ```bash
 python3 -m venv .venv
@@ -49,7 +48,19 @@ source .venv/bin/activate
 pip install -r requirements-dev.txt
 ```
 
-`requirements-dev.txt` pulls in the FastAPI/Pydantic 2 stack (`fastapi==0.115.0`, `pydantic==2.9.2`, `httpx==0.27.2`) along with linting tools. If you need a different toolchain (e.g., experimental CrewAI releases), create a separate virtualenv.
+Note: `requirements-dev.txt` pins the FastAPI/Pydantic 2 stack used by CI (currently `fastapi==0.115.0`, `pydantic==2.9.2`, `httpx==0.27.2`) along with linting tools. If you need a different toolchain (for example experimental CrewAI releases), create a separate virtual environment to avoid dependency conflicts.
+
+### 1a. Environment (legacy Manus instructions)
+
+If you prefer to mirror the legacy Manus workflow verbatim, the same steps are available in condensed form:
+
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -r requirements-dev.txt
+```
+
+These commands are preserved for downstream merges so the Manus documentation diff stays minimal.
 
 ### 2. Configuration
 
@@ -92,28 +103,58 @@ pytest tests/agents/ -v           # Agent tool mocks
 
 ## API Endpoints
 
-All endpoints require an `X-API-Key` header (default: `staging-secret-key`).
+All measurement routes require an `X-API-Key` header (default: `staging-secret-key`).
 
-**Validate measurements**
-
-```bash
-curl -s -X POST http://127.0.0.1:8000/measurements/validate   -H "Content-Type: application/json"   -H "X-API-Key: staging-secret-key"   -d '{"waist_natural": 32, "hip_low": 40, "unit": "in", "session_id": "readme-demo"}'   | python -m json.tool
-```
-
-Returns normalized centimeter measurements, confidence score, and provenance IDs. If landmarks are included, the MediaPipe calculation scaffold runs (currently placeholder geometry to be replaced with real formulas).
-
-**Recommend sizes**
+### Validate measurements
 
 ```bash
-curl -s -X POST http://127.0.0.1:8000/measurements/recommend   -H "Content-Type: application/json"   -H "X-API-Key: staging-secret-key"   -d '{"waist_natural_cm": 81.28, "hip_low_cm": 101.6, "chest_cm": 101.6, "model_version": "v1.0-mediapipe"}'   | python -m json.tool
+curl -s -X POST \
+    http://127.0.0.1:8000/measurements/validate \
+    -H "Content-Type: application/json" \
+    -H "X-API-Key: staging-secret-key" \
+    -d '{"waist_natural": 32, "hip_low": 40, "unit": "in", "session_id": "readme-demo"}' \
+    | python -m json.tool
 ```
 
-Returns stubbed tops/bottoms recommendations plus the processed measurement payload. Replace the placeholder logic in `backend/app/routers/measurements.py` once production fit rules are ready.
+Returns normalized centimeter measurements, a confidence score, and provenance IDs. When landmarks are provided, the placeholder MediaPipe calculation scaffold runs until production geometry equations are wired in.
 
-Health probes:
+**Legacy curl example (single-line format)**
 
-- `GET /` — Readiness message with version + docs link.
-- `GET /health` — Basic health status payload (extend with DB checks as needed).
+```bash
+curl -s -X POST http://127.0.0.1:8000/measurements/validate \
+    -H "Content-Type: application/json" \
+    -H "X-API-Key: staging-secret-key" \
+    -d '{"waist_natural": 32, "hip_low": 40, "unit": "in", "session_id": "readme-demo"}' \
+    | python -m json.tool
+```
+
+### Recommend sizes
+
+```bash
+curl -s -X POST \
+    http://127.0.0.1:8000/measurements/recommend \
+    -H "Content-Type: application/json" \
+    -H "X-API-Key: staging-secret-key" \
+    -d '{"waist_natural_cm": 81.28, "hip_low_cm": 101.6, "chest_cm": 101.6, "model_version": "v1.0-mediapipe"}' \
+    | python -m json.tool
+```
+
+Returns stubbed recommendations (tops + bottoms) alongside the processed measurement payload. Replace the placeholder logic in `backend/app/routers/measurements.py` and the fit-rule services as real sizing charts become available.
+
+**Legacy curl example (single-line format)**
+
+```bash
+curl -s -X POST http://127.0.0.1:8000/measurements/recommend \
+    -H "Content-Type: application/json" \
+    -H "X-API-Key: staging-secret-key" \
+    -d '{"waist_natural_cm": 81.28, "hip_low_cm": 101.6, "chest_cm": 101.6, "model_version": "v1.0-mediapipe"}' \
+    | python -m json.tool
+```
+
+### Health probes
+
+- `GET /` — Lightweight readiness message with docs pointer.
+- `GET /health` — Basic health status payload (extend with database checks as needed).
 
 ## Frontend
 

@@ -1,15 +1,8 @@
-"""
-FitTwin DMaaS API application entry point.
-
-This FastAPI app exposes measurement validation and recommendation endpoints
-backed by MediaPipe landmark processing and normalization utilities.
-"""
+"""FitTwin DMaaS API application entry point."""
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from backend.app.routers.dmaas import router as dmaas_router
-from backend.app.routers.measurement_job import router as measurement_job_router
 from backend.app.routers.measurements import router as measurements_router
 
 
@@ -17,8 +10,8 @@ app = FastAPI(
     title="FitTwin DMaaS API",
     description=(
         "Data-Model-as-a-Service API for accurate body measurements and size "
-        "recommendations. Designed for AI systems and online retailers, powered by "
-        "MediaPipe Pose Landmarker extraction."
+        "recommendations. Designed for AI systems and online retailers, powered "
+        "by MediaPipe Pose Landmarker extraction."
     ),
     version="1.0.0-mediapipe-mvp",
     contact={"name": "FitTwin Support", "email": "support@fittwin.com"},
@@ -34,15 +27,13 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Register HTTP routers.
+# Register routers
 app.include_router(measurements_router)
-app.include_router(dmaas_router)
-app.include_router(measurement_job_router)
 
 
 @app.get("/")
 def root():
-    """Lightweight health probe with docs pointer."""
+    """Lightweight readiness probe with docs pointer."""
     return {
         "status": "ok",
         "message": "FitTwin DMaaS API is running",
@@ -66,3 +57,4 @@ if __name__ == "__main__":
     import uvicorn
 
     uvicorn.run(app, host="0.0.0.0", port=8000)
+

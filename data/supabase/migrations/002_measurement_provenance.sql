@@ -54,6 +54,8 @@ CREATE TABLE measurement_sessions (
     source_type TEXT NOT NULL DEFAULT 'mediapipe_web', -- arkit_lidar, mediapipe_native, mediapipe_web, user_input
     platform TEXT NOT NULL DEFAULT 'web_mobile', -- ios, android, web_mobile, web_desktop
     device_id TEXT,
+    front_photo_url TEXT,
+    side_photo_url TEXT,
     browser_info JSONB,
     processing_location TEXT, -- client, server
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
@@ -156,6 +158,7 @@ ALTER TABLE mediapipe_landmarks ENABLE ROW LEVEL SECURITY;
 ALTER TABLE measurements_mediapipe ENABLE ROW LEVEL SECURITY;
 ALTER TABLE measurements_vendor ENABLE ROW LEVEL SECURITY;
 ALTER TABLE size_recommendations ENABLE ROW LEVEL SECURITY;
+ALTER TABLE normalized_measurements ENABLE ROW LEVEL SECURITY;
 
 -- Users can only access their own data
 CREATE POLICY "Users can view own sessions" ON measurement_sessions
@@ -204,6 +207,16 @@ CREATE POLICY "Users can insert own recommendations" ON size_recommendations
         session_id IN (SELECT id FROM measurement_sessions WHERE user_id = auth.uid())
     );
 
+CREATE POLICY "Users can view own normalized measurements" ON normalized_measurements
+    FOR SELECT USING (
+        session_id IN (SELECT session_id FROM measurement_sessions WHERE user_id = auth.uid())
+    );
+
+CREATE POLICY "Users can insert own normalized measurements" ON normalized_measurements
+    FOR INSERT WITH CHECK (
+        session_id IN (SELECT session_id FROM measurement_sessions WHERE user_id = auth.uid())
+    );
+
 -- Vendor measurements are only accessible by service role (for calibration)
 CREATE POLICY "Service role full access vendor" ON measurements_vendor
     FOR ALL USING (auth.jwt()->>'role' = 'service_role');
@@ -222,6 +235,9 @@ CREATE POLICY "Service role full access measurements" ON measurements_mediapipe
     FOR ALL USING (auth.jwt()->>'role' = 'service_role');
 
 CREATE POLICY "Service role full access recommendations" ON size_recommendations
+    FOR ALL USING (auth.jwt()->>'role' = 'service_role');
+
+CREATE POLICY "Service role full access normalized measurements" ON normalized_measurements
     FOR ALL USING (auth.jwt()->>'role' = 'service_role');
 
 -- Trigger to update updated_at timestamp
@@ -245,4 +261,20 @@ COMMENT ON TABLE mediapipe_landmarks IS 'Stores MediaPipe Pose landmarks for mea
 COMMENT ON TABLE measurements_mediapipe IS 'Stores calculated measurements from MediaPipe landmarks';
 COMMENT ON TABLE measurements_vendor IS 'Stores vendor API measurements for calibration only (excluded from live)';
 COMMENT ON TABLE size_recommendations IS 'Stores size recommendations generated from measurements';
+
+-- Normalized measurement payloads (JSON envelope used by MediaPipe pipeline)
+CREATE TABLE normalized_measurements (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    session_id TEXT NOT NULL REFERENCES measurement_sessions(session_id) ON DELETE CASCADE,
+    payload JSONB NOT NULL,
+    source TEXT DEFAULT 'mediapipe',
+    model_version TEXT DEFAULT 'v1.0-mediapipe',
+    confidence NUMERIC,
+    accuracy_estimate NUMERIC,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+CREATE INDEX idx_normalized_measurements_session ON normalized_measurements(session_id);
+
+COMMENT ON TABLE normalized_measurements IS 'Stores normalized measurement outputs with confidence and provenance metadata';
 
