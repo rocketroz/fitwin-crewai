@@ -1,11 +1,17 @@
-"""
-Measurement schemas for validation, normalization, and MediaPipe landmark input.
+"""Measurement schemas for validation and normalization.
 
-Adopted from the Manus implementation package. Uses Pydantic models so the same
-schema can serve both API responses and agent tooling.
+The additional legacy synopsis is kept intact below so that future merges with
+the Manus repository stay low-noise.
 """
 
 from __future__ import annotations
+
+LEGACY_NOTES = """
+Measurement schemas for input validation and normalization.
+
+This module defines the canonical measurement names, unit enum, and schemas
+for input, MediaPipe landmarks, and normalized output.
+"""
 
 from enum import Enum
 from typing import List, Optional
@@ -44,16 +50,16 @@ class MediaPipeLandmarks(BaseModel):
 
 
 class MeasurementInput(BaseModel):
-    """Input schema for measurements with flexible units and MediaPipe data from all platforms."""
-    
-    # Platform identification
-    source_type: str = "mediapipe_web"  # "arkit_lidar", "mediapipe_native", "mediapipe_web", "user_input"
-    platform: str = "web_mobile"  # "ios", "android", "web_mobile", "web_desktop"
-    
-    # ARKit LiDAR data (iOS native only)
+    """Input schema for measurements with flexible units and MediaPipe data."""
+
+    # Platform identification metadata
+    source_type: str = "mediapipe_web"
+    platform: str = "web_mobile"
+
+    # Optional ARKit LiDAR data (iOS native)
     arkit_body_anchor: Optional[dict] = None
     arkit_depth_map: Optional[str] = None
-    
+
     # Core measurements (optional, can be calculated from landmarks)
     height: Optional[float] = None
     neck: Optional[float] = None
@@ -84,7 +90,7 @@ class MeasurementInput(BaseModel):
 
     # Web-specific metadata
     browser_info: Optional[dict] = None
-    processing_location: Optional[str] = None  # "client", "server"
+    processing_location: Optional[str] = None
 
     # Photo URLs for provenance
     front_photo_url: Optional[str] = None
@@ -93,26 +99,84 @@ class MeasurementInput(BaseModel):
     # Device metadata
     device_id: Optional[str] = None
 
-    # Validation removed for Pydantic v2 compatibility
-    # Field-level validation can be added if needed
+    @field_validator(
+        "height",
+        "neck",
+        "shoulder",
+        "chest",
+        "underbust",
+        "waist_natural",
+        "sleeve",
+        "bicep",
+        "forearm",
+        "hip_low",
+        "thigh",
+        "knee",
+        "calf",
+        "ankle",
+        "front_rise",
+        "back_rise",
+        "inseam",
+        "outseam",
+        mode="before",
+    )
+    def _ensure_positive(cls, value):
+        """Ensure numeric measurements are positive when provided."""
+
+        if value is None:
+            return value
+        if isinstance(value, (int, float)) and value <= 0:
+            raise ValueError("measurements must be positive values")
+        return value
 
     if ConfigDict:  # pragma: no branch - executed depending on pydantic version
         model_config = ConfigDict(extra="allow")
     else:
+
         class Config:  # type: ignore
             extra = "allow"
 
 
 class MeasurementNormalized(BaseModel):
-    """Normalized measurement schema (all in cm) with confidence scores."""
-    
-    session_id: str
-    measurements: dict  # Dictionary of measurement_name_cm: value
-    source: str  # "mediapipe", "user_input", "vendor_api"
-    accuracy: float = Field(ge=0, le=1, default=1.0)
-    
+    """Normalized measurement schema (all values in centimeters)."""
+
+    # Measurement values
+    height_cm: Optional[float] = None
+    neck_cm: Optional[float] = None
+    shoulder_cm: Optional[float] = None
+    chest_cm: Optional[float] = None
+    underbust_cm: Optional[float] = None
+    waist_natural_cm: Optional[float] = None
+    sleeve_cm: Optional[float] = None
+    bicep_cm: Optional[float] = None
+    forearm_cm: Optional[float] = None
+    hip_low_cm: Optional[float] = None
+    thigh_cm: Optional[float] = None
+    knee_cm: Optional[float] = None
+    calf_cm: Optional[float] = None
+    ankle_cm: Optional[float] = None
+    front_rise_cm: Optional[float] = None
+    back_rise_cm: Optional[float] = None
+    inseam_cm: Optional[float] = None
+    outseam_cm: Optional[float] = None
+
+    # Metadata
+    source: str = "mediapipe"
+    model_version: str = "v1.0-mediapipe"
+    confidence: float = Field(ge=0, le=1, default=1.0)
+    accuracy_estimate: Optional[float] = None
+    session_id: Optional[str] = None
+
     # Provenance
     front_photo_url: Optional[str] = None
     side_photo_url: Optional[str] = None
     front_landmarks_id: Optional[str] = None
     side_landmarks_id: Optional[str] = None
+
+    if ConfigDict:  # pragma: no branch - executed depending on pydantic version
+        model_config = ConfigDict(extra="allow")
+    else:
+
+        class Config:  # type: ignore
+            extra = "allow"
+

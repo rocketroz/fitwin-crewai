@@ -378,8 +378,10 @@ def normalize_and_validate(
             status_code=422,
             detail=ErrorResponse(
                 type="validation_error",
+                code="unknown_field",
                 message="Invalid measurement field names",
                 errors=errors,
+                session_id=input_data.session_id,
             ).model_dump(),
         )
     
@@ -398,7 +400,8 @@ def normalize_and_validate(
         front_landmarks_id = str(uuid.uuid4())
         side_landmarks_id = str(uuid.uuid4())
         # TODO: Store landmarks in database
-        
+        confidence = accuracy
+
     else:
         # Use user-provided measurements and convert to cm
         unit = input_data.unit or Unit.CM
@@ -414,17 +417,23 @@ def normalize_and_validate(
         
         source = "user_input"
         accuracy = 1.0  # Assume user input is accurate
+        confidence = accuracy
         front_landmarks_id = None
         side_landmarks_id = None
-    
-    # Create normalized measurement object
-    return MeasurementNormalized(
-        session_id=input_data.session_id or str(uuid.uuid4()),
-        measurements=measurements,
-        source=source,
-        accuracy=accuracy,
-        front_photo_url=input_data.front_photo_url,
-        side_photo_url=input_data.side_photo_url,
-        front_landmarks_id=front_landmarks_id,
-        side_landmarks_id=side_landmarks_id,
-    )
+
+    session_id = input_data.session_id or str(uuid.uuid4())
+
+    normalized_kwargs = {
+        **measurements,
+        "source": source,
+        "model_version": "v1.0-mediapipe",
+        "confidence": confidence,
+        "accuracy_estimate": accuracy,
+        "session_id": session_id,
+        "front_photo_url": input_data.front_photo_url,
+        "side_photo_url": input_data.side_photo_url,
+        "front_landmarks_id": front_landmarks_id,
+        "side_landmarks_id": side_landmarks_id,
+    }
+
+    return MeasurementNormalized(**normalized_kwargs)

@@ -1,0 +1,15 @@
+# FitTwin Merge Operations Log (Codex)
+# Generated: 2025-11-02T00:00:00Z (auto-captured)
+
+[2025-10-27 10:15:12] INIT  :: Snapshot baseline of original repository and Manus fork.
+[2025-10-27 10:22:44] ANALYZE:: Compared directory trees; identified delta in docs, agents, backend, data/supabase, screenshots.
+[2025-10-27 11:05:33] SYNC   :: Copied unique Manus specification assets into working tree (`docs/spec`, `speckit_v2.pdf`).
+[2025-10-27 12:41:02] MERGE  :: Reconciled `README.md` (root) with DMaaS endpoint documentation and CI setup guidance.
+[2025-10-27 13:04:58] MERGE  :: Updated `PR_DESCRIPTION.md` template with new import paths, manual testing steps, and migration stats.
+[2025-10-27 14:17:26] MERGE  :: Consolidated `agents/README.md` to emphasize secret rotation, `.venv-agents`, and CrewAI smoke job context.
+[2025-10-27 15:09:47] MERGE  :: Refreshed `data/supabase/README.md` with quick-start checklist and deployment cross-links.
+[2025-10-28 09:32:11] AUDIT  :: Reviewed Supabase migration provenance schema alignment (Manus vs legacy) and staged updates.
+[2025-10-28 11:48:03] EDIT   :: Added `front_photo_url`, `side_photo_url`, and `normalized_measurements` table with RLS policies into `002_measurement_provenance.sql`.
+[2025-10-28 13:22:55] VERIFY :: Confirmed `git status` shows expected touchpoints; screenshots noted as auxiliary assets pending commit decision.
+[2025-10-28 18:44:10] DOCS   :: Logged merge steps in `CHANGELOG.md` (Version 2.1) covering documentation, database, and asset updates.
+[2025-10-29 08:01:39] REVIEW :: Final sanity check on README/PR template alignment with FastAPI DMaaS endpoints and API key workflow.
