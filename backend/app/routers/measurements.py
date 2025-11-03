@@ -1,19 +1,4 @@
 """
-Measurement endpoints for validation and recommendations.
-
-These endpoints provide the DMaaS functionality described in the Manus package:
-- POST /measurements/validate
-- POST /measurements/recommend
-"""
-
-from typing import Optional
-import os
-
-from fastapi import APIRouter, Depends, Header, HTTPException, Request
-
-from backend.app.schemas.errors import ErrorDetail, ErrorResponse
-from backend.app.schemas.measure_schema import MeasurementInput, MeasurementNormalized
-from backend.app.core.validation import normalize_and_validate
 Measurements router for validation and recommendation endpoints.
 
 This module implements the two main DMaaS API endpoints:
@@ -21,28 +6,24 @@ This module implements the two main DMaaS API endpoints:
 - /measurements/recommend: Generate size recommendations from normalized measurements
 """
 
-from fastapi import APIRouter, Depends, Header, HTTPException
-from backend.app.schemas.measure_schema import MeasurementInput, MeasurementNormalized
-from backend.app.schemas.errors import ErrorResponse, ErrorDetail
-from backend.app.core.validation import normalize_and_validate
-from typing import Optional
 import os
+from typing import Optional
+
+from fastapi import APIRouter, Depends, Header, HTTPException
+
+from backend.app.core.validation import normalize_and_validate
+from backend.app.schemas.errors import ErrorDetail, ErrorResponse
+from backend.app.schemas.measure_schema import MeasurementInput, MeasurementNormalized
 
 
 router = APIRouter(prefix="/measurements", tags=["measurements"])
 
-# Simple API key gate for staging environments.
+# Simple API key check (for staging)
 VALID_API_KEY = os.getenv("API_KEY", "staging-secret-key")
 
 
 def verify_api_key(x_api_key: Optional[str] = Header(default=None)):
     """Fail requests that do not provide the expected staging API key."""
-# Simple API key check (for staging)
-VALID_API_KEY = os.getenv("API_KEY", "staging-secret-key")
-
-
-def verify_api_key(x_api_key: Optional[str] = Header(None)):
-    """Verify API key for authentication."""
     if x_api_key != VALID_API_KEY:
         raise HTTPException(
             status_code=401,
@@ -60,65 +41,18 @@ def verify_api_key(x_api_key: Optional[str] = Header(None)):
     response_model=MeasurementNormalized,
     dependencies=[Depends(verify_api_key)],
 )
-async def validate_measurements(request: Request, input_data: MeasurementInput):
-    """
-    Validate and normalize measurement input.
-
-    MediaPipe landmarks, when provided, are converted into anthropometric
-    measurements. Otherwise raw user measurements are normalized to centimeters.
-    """
-    try:
-        raw_payload = await request.json()
-        normalized = normalize_and_validate(input_data, raw_payload)
-
-        # Placeholder accuracy flag for CEO review.
-        if normalized.accuracy_estimate and normalized.accuracy_estimate > 0.03:
-            # TODO: persist flag for later review/escalation.
-            pass
-
-        return normalized
-
-    except HTTPException:
-        raise
-    except Exception as exc:
-                errors=[]
-            ).dict()
-        )
-
-
-@router.post("/validate", response_model=MeasurementNormalized, dependencies=[Depends(verify_api_key)])
 def validate_measurements(input_data: MeasurementInput):
     """
     Validate and normalize measurement input.
-    
+
     If MediaPipe landmarks are provided, calculates measurements from landmarks.
     Otherwise, uses user-provided measurements and converts to centimeters.
-    
-    Returns normalized measurements with confidence scores and accuracy estimates.
-    
-    Args:
-        input_data: Measurement input with optional MediaPipe landmarks
-        
-    Returns:
-        Normalized measurements in centimeters with metadata
-        
-    Raises:
-        HTTPException: 422 for validation errors, 401 for auth errors, 500 for server errors
     """
     try:
-        normalized = normalize_and_validate(input_data)
-        
-        # Check accuracy threshold
-        if normalized.accuracy_estimate and normalized.accuracy_estimate > 0.03:
-            # Accuracy below 97% - flag for potential vendor calibration
-            # TODO: Store flag in database for CEO Agent review
-            pass
-        
-        return normalized
-        
+        return normalize_and_validate(input_data)
     except HTTPException:
         raise
-    except Exception as e:
+    except Exception as exc:  # pragma: no cover - defensive server guardrail
         raise HTTPException(
             status_code=500,
             detail=ErrorResponse(
@@ -143,46 +77,12 @@ def recommend_sizes(measurements: MeasurementNormalized):
     Actual fit rule integration is pending; we return a stubbed payload for now.
     """
     try:
-        # TODO: replace placeholders with calls into fit rule services.
         recommendations = [
-                errors=[ErrorDetail(field="", message=str(e))],
-                session_id=input_data.session_id
-            ).dict()
-        )
-
-
-@router.post("/recommend", response_model=dict, dependencies=[Depends(verify_api_key)])
-def recommend_sizes(measurements: MeasurementNormalized):
-    """
-    Generate size recommendations from normalized measurements.
-    
-    Returns recommendations with confidence scores, processed measurements,
-    and model version for API consumers.
-    
-    Args:
-        measurements: Normalized measurements in centimeters
-        
-    Returns:
-        Dictionary with recommendations, processed measurements, and metadata
-        
-    Raises:
-        HTTPException: 401 for auth errors, 500 for server errors
-    """
-    try:
-        # TODO: Import and use actual fit rules
-        # from backend.app.services.fit_rules_tops import recommend_top
-        # from backend.app.services.fit_rules_bottoms import recommend_bottom
-        # m_dict = measurements.dict()
-        # recs = [recommend_top(m_dict), recommend_bottom(m_dict)]
-        
-        # Placeholder implementation
-        recs = [
             {
                 "category": "tops",
                 "size": "M",
                 "confidence": 0.9,
                 "rationale": "Based on chest and waist measurements",
-                "rationale": "Based on chest and waist measurements"
             },
             {
                 "category": "bottoms",
@@ -199,19 +99,7 @@ def recommend_sizes(measurements: MeasurementNormalized):
             "session_id": measurements.session_id,
         }
 
-    except Exception as exc:
-                "rationale": "Based on waist and inseam measurements"
-            }
-        ]
-        
-        return {
-            "recommendations": recs,
-            "processed_measurements": measurements,
-            "model_version": measurements.model_version,
-            "session_id": measurements.session_id
-        }
-        
-    except Exception as e:
+    except Exception as exc:  # pragma: no cover - defensive server guardrail
         raise HTTPException(
             status_code=500,
             detail=ErrorResponse(
@@ -221,9 +109,4 @@ def recommend_sizes(measurements: MeasurementNormalized):
                 errors=[ErrorDetail(field="", message=str(exc))],
                 session_id=measurements.session_id,
             ).dict(),
-        ) from exc
-                errors=[ErrorDetail(field="", message=str(e))],
-                session_id=measurements.session_id
-            ).dict()
         )
-

@@ -6,6 +6,16 @@
 	objectVersion = 60;
 	objects = {
 
+/* Begin PBXContainerItemProxy section */
+		BC5AD23430C5A1AA00F1E5A9 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 6A0F0F5C29F8C60D00A1B2C3 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 6A0F0F5C29F8C60F00A1B2C3;
+			remoteInfo = FitTwinApp;
+		};
+/* End PBXContainerItemProxy section */
+
 /* Begin PBXBuildFile section */
 		00D39A639D3F43B2B68812EB /* LiDARMeasurementCalculator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6A0F0F5C29F8C6A200A1B2C3 /* LiDARMeasurementCalculator.swift */; };
 		6A0F0F5C29F8C66500A1B2C3 /* FitTwinAppApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6A0F0F5C29F8C65000A1B2C3 /* FitTwinAppApp.swift */; };
@@ -22,6 +32,7 @@
 		BC1A4B7A2C3F47B600123456 /* CameraSessionController.swift in Sources */ = {isa = PBXBuildFile; fileRef = BC1A4B7A2C3F47B500123456 /* CameraSessionController.swift */; };
 		BC1A4B7A2C3F47B800123456 /* CameraPreviewView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BC1A4B7A2C3F47B700123456 /* CameraPreviewView.swift */; };
 		9757CD1B62904BA4B8F90AA4 /* FitTwinAPI.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6A0F0F5C29F8C6A300A1B2C3 /* FitTwinAPI.swift */; };
+		BC5AD23430C5A1AA00F1E5A8 /* FitTwinAppTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = BC5AD23430C5A1AA00F1E5A6 /* FitTwinAppTests.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -42,6 +53,9 @@
 		BC1A4B7A2C3F47B500123456 /* CameraSessionController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CameraSessionController.swift; sourceTree = "<group>"; };
 		BC1A4B7A2C3F47B700123456 /* CameraPreviewView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CameraPreviewView.swift; sourceTree = "<group>"; };
 		6A0F0F5C29F8C6A300A1B2C3 /* FitTwinAPI.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FitTwinAPI.swift; sourceTree = "<group>"; };
+		BC5AD23430C5A1AA00F1E5A4 /* FitTwinAppTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = FitTwinAppTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		BC5AD23430C5A1AA00F1E5A6 /* FitTwinAppTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FitTwinAppTests.swift; sourceTree = "<group>"; };
+		BC5AD23430C5A1AA00F1E5A7 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -53,6 +67,13 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		BC5AD23430C5A1AA00F1E5A2 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
@@ -60,6 +81,7 @@
 			isa = PBXGroup;
 			children = (
 				6A0F0F5C29F8C65400A1B2C3 /* FitTwinApp */,
+				BC5AD23430C5A1AA00F1E5A5 /* FitTwinAppTests */,
 				6A0F0F5C29F8C69B00A1B2C3 /* Frameworks */,
 				6A0F0F5C29F8C61200A1B2C3 /* Products */,
 			);
@@ -69,6 +91,7 @@
 			isa = PBXGroup;
 			children = (
 				6A0F0F5C29F8C64F00A1B2C3 /* FitTwinApp.app */,
+				BC5AD23430C5A1AA00F1E5A4 /* FitTwinAppTests.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -111,6 +134,15 @@
 			name = Frameworks;
 			sourceTree = "<group>";
 		};
+		BC5AD23430C5A1AA00F1E5A5 /* FitTwinAppTests */ = {
+			isa = PBXGroup;
+			children = (
+				BC5AD23430C5A1AA00F1E5A6 /* FitTwinAppTests.swift */,
+				BC5AD23430C5A1AA00F1E5A7 /* Info.plist */,
+			);
+			path = FitTwinAppTests;
+			sourceTree = "<group>";
+		};
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
@@ -131,6 +163,24 @@
 			productReference = 6A0F0F5C29F8C64F00A1B2C3 /* FitTwinApp.app */;
 			productType = "com.apple.product-type.application";
 		};
+		BC5AD23430C5A1AA00F1E5A0 /* FitTwinAppTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = BC5AD23430C5A1AA00F1E5B5 /* Build configuration list for PBXNativeTarget "FitTwinAppTests" */;
+			buildPhases = (
+				BC5AD23430C5A1AA00F1E5A1 /* Sources */,
+				BC5AD23430C5A1AA00F1E5A2 /* Frameworks */,
+				BC5AD23430C5A1AA00F1E5A3 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				BC5AD23430C5A1AA00F1E5AA /* PBXTargetDependency */,
+			);
+			name = FitTwinAppTests;
+			productName = FitTwinAppTests;
+			productReference = BC5AD23430C5A1AA00F1E5A4 /* FitTwinAppTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -143,6 +193,10 @@
 				TargetAttributes = {
 					6A0F0F5C29F8C60F00A1B2C3 = {
 						CreatedOnToolsVersion = 15.3;
+					};
+					BC5AD23430C5A1AA00F1E5A0 = {
+						CreatedOnToolsVersion = 15.3;
+						TestTargetID = 6A0F0F5C29F8C60F00A1B2C3;
 					};
 				};
 			};
@@ -160,6 +214,7 @@
 			projectRoot = "";
 			targets = (
 				6A0F0F5C29F8C60F00A1B2C3 /* FitTwinApp */,
+				BC5AD23430C5A1AA00F1E5A0 /* FitTwinAppTests */,
 			);
 		};
 /* End PBXProject section */
@@ -171,6 +226,13 @@
 			files = (
 				6A0F0F5C29F8C66700A1B2C3 /* Assets.xcassets in Resources */,
 				6A0F0F5C29F8C66800A1B2C3 /* Preview Assets.xcassets in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		BC5AD23430C5A1AA00F1E5A3 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -196,7 +258,23 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		BC5AD23430C5A1AA00F1E5A1 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				BC5AD23430C5A1AA00F1E5A8 /* FitTwinAppTests.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		BC5AD23430C5A1AA00F1E5AA /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 6A0F0F5C29F8C60F00A1B2C3 /* FitTwinApp */;
+			targetProxy = BC5AD23430C5A1AA00F1E5A9 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
 		6A0F0F5C29F8C67000A1B2C3 /* Debug */ = {
@@ -379,6 +457,58 @@
 			};
 			name = Release;
 		};
+		BC5AD23430C5A1AA00F1E5AB /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 39MVLNH773;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = FitTwinAppTests/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.lauratornga.fittwin.appTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/FitTwinApp.app/FitTwinApp";
+			};
+			name = Debug;
+		};
+		BC5AD23430C5A1AA00F1E5AC /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 39MVLNH773;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = FitTwinAppTests/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.lauratornga.fittwin.appTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/FitTwinApp.app/FitTwinApp";
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -396,6 +526,15 @@
 			buildConfigurations = (
 				6A0F0F5C29F8C67200A1B2C3 /* Debug */,
 				6A0F0F5C29F8C67300A1B2C3 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		BC5AD23430C5A1AA00F1E5B5 /* Build configuration list for PBXNativeTarget "FitTwinAppTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				BC5AD23430C5A1AA00F1E5AB /* Debug */,
+				BC5AD23430C5A1AA00F1E5AC /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
